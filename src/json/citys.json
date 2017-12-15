@@ -1,0 +1,26 @@
+﻿{
+    "provinces": [
+        {
+            "citys": [
+                {
+                    "citysName": "南京市",
+                    "area": ['鼓楼区','玄武区']
+                },
+                {
+                    "citysName": "扬州市",
+                    "area": ['江都市','仪征市']
+                },
+            ],
+            "provinceName": "江苏省"
+        },
+        {
+            "citys": [
+                {
+                    "citysName": "合肥市",
+                    "area": ['庐阳区','蜀山区']
+                },
+            ],
+            "provinceName": "安徽省"
+        },
+       ]
+}
