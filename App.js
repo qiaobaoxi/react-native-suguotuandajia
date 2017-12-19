@@ -28,6 +28,7 @@ import ShoppingCart from './src/components/ShoppingCart';
 import StorePayment from './src/components/StorePayment';
 import Store from './src/components/Store';
 import Order from './src/components/Order';
+import Login from './src/components/Login';
 import MyAllOrder from './src/components/MyAllOrder';
 import MyCardCoupons from './src/components/MyCardCoupons';
 import MyCollection from './src/components/MyCollection';
@@ -36,12 +37,15 @@ import MyCoupon from './src/components/MyCoupon';
 import MyInfo from './src/components/MyInfo';
 import AddressManage from './src/components/AddressManage';
 import OrderDetail from './src/components/OrderDetail';
-const deviceWidthDp = Dimensions.get('window').width;
+import CookieManager from 'react-native-cookies';
 import fetch from './src/js/fetch'
+const deviceWidthDp = Dimensions.get('window').width;
 const uiWidthPx = 750;
-global.url='http://wx.haipibaobao.com'
-
-
+global.url='http://dalv.ipet66.com'
+CookieManager.clearAll()
+.then(res => {
+  console.log('CookieManager.clearAll =>', res);
+});
 function pxToDp(uiElementPx) {
   return uiElementPx *  deviceWidthDp / uiWidthPx;
 }
@@ -51,6 +55,7 @@ class HomeScreen extends Component<{}> {
   }
    constructor(props) {
         super(props);
+        console.disableYellowBox = true;
         this.state = {
             selectedTab: 'index'
         }
@@ -172,6 +177,16 @@ class GoodsScreen extends React.Component {
   render() {
     return (
       <Goods  navigation={this.props.navigation} />
+    );
+  }
+}
+class LoginScreen extends React.Component {
+  static navigationOptions = {
+    header:null
+  };
+  render() {
+    return (
+      <Login  navigation={this.props.navigation} />
     );
   }
 }
@@ -404,6 +419,7 @@ const styles = StyleSheet.create({
   }
 });
 const RootNavigator = StackNavigator({
+  Login: { screen: LoginScreen },
   Home: {
     screen: HomeScreen,
   },

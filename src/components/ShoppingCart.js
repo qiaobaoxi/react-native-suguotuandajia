@@ -42,6 +42,7 @@ function scrrollHeight(uiElementHeight) {
 class Goods extends Component{
     constructor(props) {
         super(props);
+        console.disableYellowBox = true;
         var type1 = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
         fetch(global.url+'/API/MyCart/getShopCartList','post','',(responseData)=>{
             // this.setState({num:responseData.cartNum})

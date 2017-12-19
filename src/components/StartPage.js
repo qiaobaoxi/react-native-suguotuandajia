@@ -21,6 +21,7 @@ function pxToDp(uiElementPx) {
 class Index extends Component{
     constructor(props) {
         super(props);
+        console.disableYellowBox = true;
     }
     render(){
         const { navigate} = this.props.navigation;

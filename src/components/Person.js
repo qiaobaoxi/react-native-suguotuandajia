@@ -27,8 +27,8 @@ function pxToDp(uiElementPx) {
 class NineBox extends React.Component{
     constructor(props) {
         super(props);
+        console.disableYellowBox = true;
         this.state = {modalVisible: false};
-        let url = "http://192.168.0.97:94/api/home/getInitData"  
         this.state.dataSource={
             user:{
                 birthday: "",
@@ -52,13 +52,18 @@ class NineBox extends React.Component{
                  this.setState({coupon:responseData.data[0].count});
               })
            fetch(global.url+'/API/user/getStateNum','get','',(responseData)=>{
-                 this.setState({
-                     paymentDt:responseData.data.paymentDt[0].total,
-                     shipmentDt:responseData.data.shipmentDt[0].total,
-                     goodsReceiptDt:responseData.data.goodsReceiptDt[0].total,
-                     commentDt:responseData.data.commentDt[0].total,
-                     returnReject:responseData.data.returnReject[0].total
-                 })
+               if(responseData.success){
+                this.setState({
+                    paymentDt:responseData.data.paymentDt,
+                    shipmentDt:responseData.data.shipmentDt,
+                    goodsReceiptDt:responseData.data.goodsReceiptDt,
+                    commentDt:responseData.data.commentDt,
+                    returnReject:responseData.data.returnReject
+                })
+               }else{
+                   console.error(responseData.message)
+               }
+                 
               })
               fetch(global.url+'/api/home/getInitData','GET','',(responseData)=>{
                   this.setState({dataSource:responseData});
@@ -105,7 +110,7 @@ class NineBox extends React.Component{
                     }}>
                         <Image style={styles.goodsWrapImg} source={require('../images/goods1.png')}></Image>
                         <Text  style={styles.goodsWrapText}>待付款</Text>
-                        <View style={styles.goodsWrapSpanWrap}><Text style={styles.goodsWrapSpan}>{this.state.paymentDt}</Text></View>
+                        {this.state.paymentDt==0?'':<View style={styles.goodsWrapSpanWrap}><Text style={styles.goodsWrapSpan}>{this.state.paymentDt}</Text></View>}
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.goodsWrap}  onPress={()=>{
                         navigate("MyAllOrder",{num:1})
@@ -119,7 +124,7 @@ class NineBox extends React.Component{
                     }}>
                         <Image style={styles.goodsWrapImg} source={require('../images/goods3.png')}></Image>
                         <Text  style={styles.goodsWrapText}>待收货</Text>
-                        <View style={styles.goodsWrapSpanWrap}><Text  style={styles.goodsWrapSpan}>{this.state.goodsReceiptDt}</Text></View>
+                        {this.state.goodsReceiptDt==0?null:<View style={styles.goodsWrapSpanWrap}><Text  style={styles.goodsWrapSpan}>{this.state.goodsReceiptDt}</Text></View>}
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.goodsWrap}  onPress={()=>{
                         navigate("MyAllOrder",{num:3})

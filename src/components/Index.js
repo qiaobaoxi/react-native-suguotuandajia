@@ -40,6 +40,7 @@ function scrrollHeight(uiElementHeight) {
 class Index extends Component{
     constructor(props) {
         super(props);
+        console.disableYellowBox = true;
         var type1 = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
         let type2 = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2,
                      sectionHeaderHasChanged:(s1,s2)=>r1 !== r2,
@@ -52,7 +53,6 @@ class Index extends Component{
       };
       let url=global.url+'/API/home/initSgHome'
       fetch(url,'post','',(responseData)=>{
-        console.log(responseData.data)
             let menu1=[]
             for(let i=0;i<responseData.data.length;i++){
               if(i==0){
@@ -100,7 +100,9 @@ class Index extends Component{
         const { navigate } = this.props.navigation;
         return (
           <View style={styles.goods3body}>
-           <TouchableOpacity onPress={() => navigate('Goods',{id:data.id})}>
+           <TouchableOpacity onPress={() => navigate('Goods',{id:data.id,getNum:()=>{
+            // this.state.
+           }})}>
             <View style={styles.goods3bodyEach}>
               <Image style={styles.goods3bodyImg} source={{uri:data.img}}></Image> 
               <Text style={styles.goods3bodyText} >{data.name}</Text>
@@ -147,7 +149,7 @@ class Index extends Component{
                     <TouchableHighlight style={styles.headerFunctionEach}>
                       <View style={styles.headerFunctionEach}>
                           <Image  style={styles.headerFunctionEachImg} source={require('../images/sign.png')}></Image>
-                          <Text  style={styles.headerFunctionEachText}>签到</Text>
+                          <Text  style={styles.headerFunctionEachText}>签到1</Text>
                         </View>
                     </TouchableHighlight>
                     <TouchableHighlight style={styles.headerFunctionEach}>

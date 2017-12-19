@@ -12,7 +12,8 @@ import {
   Alert
 } from 'react-native';
 const deviceWidthDp = Dimensions.get('window').width;
-
+import CookieManager from 'react-native-cookies';
+import Cookie from 'react-native-cookie';
 const uiWidthPx = 750;
 
 function pxToDp(uiElementPx) {
@@ -21,6 +22,8 @@ function pxToDp(uiElementPx) {
 class Index extends Component{
     constructor(props) {
         super(props);
+        console.disableYellowBox = true;
+        Cookie.set(global.url+'/web/myOrder.html?type=', 'userOpenId', 'oWgQ8uO1vM9GhWFNVncH6yVHF_4k').then(() => console.log('success'));
     }
     handleMessage(navigate,e) {
           navigate('OrderDetail')
@@ -38,7 +41,7 @@ class Index extends Component{
                 backgroundColor: "#e5e5e5",
                 height: 100,
                 }}
-                source={{uri:'http://192.168.0.97:94/web/myOrder.html?type='+num}}
+                source={{uri:global.url+'/web/myOrder.html?type='+num}}
                 onMessage={this.handleMessage(navigate)}  
             />
         );

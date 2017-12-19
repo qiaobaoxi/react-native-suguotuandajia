@@ -47,19 +47,21 @@ global.back='Goods'
 class Goods extends Component{
     constructor(props) {
         super(props);
-        Alert.alert(''+this.props.num)
+        console.disableYellowBox = true;
         let url = global.url+"/API/home/getGoodsList"
         const { params } = this.props.navigation.state;
         if (typeof params != 'object') {
             return
         }
+        
         let params1 = {addressLabel:"00060001",categoryId:71,keyword:"",loadAll:false,pageIndex:0}
         this.state={dataSource:[],modalVisible: false,
           num: 1,
           url,params1,
           goods : [
           ],
-          isLoad:false
+          isLoad:false,
+          getNum:params.getNum
         }
         this.getGoodsList()
         // AsyncStorage.getItem('goods',(error,result)=>{
@@ -150,6 +152,7 @@ class Goods extends Component{
                                         // Alert.alert(JSON.stringify(responseData))
                                     })
                                     this.state.dataSource[i].num++ 
+                                    this.state.getNum()
                                     // AsyncStorage.getItem('goods',(error,result)=>{
                                     // if (error!=null){  
                                     //    console.log("error message:"+error.message);  

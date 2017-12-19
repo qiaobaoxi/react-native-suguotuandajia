@@ -21,6 +21,7 @@ function pxToDp(uiElementPx) {
 class Index extends Component{
     constructor(props) {
         super(props);
+        console.disableYellowBox = true;
     }
     handleMessage(navigate,e) {
         // Alert.alert(e)

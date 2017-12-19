@@ -30,7 +30,7 @@ import {
 import fetch from '../js/fetch'
 import citysWrap from '../json/citys.json'
 import publicIP from 'react-native-public-ip';
-
+import CookieManager from 'react-native-cookies';
 const deviceWidthDp = Dimensions.get('window').width;
 const deviceHeightDp = Dimensions.get('window').height;
 const DeviceInfo = require('react-native-device-info');
@@ -44,9 +44,16 @@ function pxToDp(uiElementPx) {
 function scrrollHeight(uiElementHeight) {
   return deviceHeightDp-uiElementHeight;
 }
+function clearAll(){
+  CookieManager.clearAll()
+  .then(res => {
+    console.log('CookieManager.clearAll =>', res);
+  });
+}
 class Store extends Component{
     constructor(props) {
         super(props);
+        console.disableYellowBox = true;
         var ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
         this.state = {
           dataSource: ds.cloneWithRows([]),
@@ -54,24 +61,27 @@ class Store extends Component{
           payNum: 1,
           payName: '支付宝',
         };
-        let params={
-           addressId:global.addressId,
-           defaultDeliveryType:'0',
-           products:global.goods
+        if(!global.addressId){
+          global.addressId=0
         }
-        fetch(global.url+'/API/MyCart/checkout?','post',params,(responseData)=>{
-            // this.setState({num:responseData.cartNum})
+        let params={
+           addressId: global.addressId,
+           defaultDeliveryType: '0',
+           products: global.goods
+        }
+        clearAll()
+        fetch(global.url+'/API/MyCart/checkout','post',params,(responseData)=>{
+            global.addressId=responseData.data.address.id
               if(typeof responseData=='object'){
                 let num=0
                 for(let i=0;i<responseData.data.shopCartListDt.length;i++){
                   num+=responseData.data.shopCartListDt[i].count
                 }
-
-                this.setState({dataSource:ds.cloneWithRows(responseData.data.shopCartListDt),allCount:num,totalAmount:responseData.data.payAmount,freight:responseData.data.shippingFee,address: responseData.data.address})
+                this.setState({dataSource:ds.cloneWithRows(responseData.data.shopCartListDt),allCount:num,totalAmount:responseData.data.totalAmount,freight:responseData.data.shippingFee,address: responseData.data.address,totalCardPayment:responseData.data.totalCardPayment,enterpriseAccountPayment:responseData.data.enterpriseAccountPayment})
               }
         },(error)=>{
             Alert.alert(error+'')    
-        }) 
+        })
         let timeStamp= new Date().getTime()
     //     let xml=`<xml>
     //     <appid>wx552eb71ba49e52ad</appid>
@@ -87,22 +97,6 @@ class Store extends Component{
     //     <sign>0CB01533B8C1EF103065174F50BCA001</sign>
     //  </xml>`
     //     fetch('https://api.mch.weixin.qq.com/pay/unifiedorder','post',)
-    }
-    async componentDidMount() {
-      try {
-
-        await WeChat.registerApp('wx552eb71ba49e52ad');
-        this.setState({
-          partnerId: '1483372312',
-          prepayId: await WeChat.getWXAppInstallUrl(),
-          isWXAppSupportApi: await WeChat.isWXAppSupportApi(),
-          isWXAppInstalled: await WeChat.isWXAppInstalled()
-        });
-        console.log(this.state);
-      } catch (e) {
-        console.error(e);
-      }
-      console.log(WeChat);
     }
     address(navigate){
       if(this.state.address){
@@ -199,7 +193,7 @@ class Store extends Component{
                     <Text style={[styles.totalTitleSame,styles.orderTotleTitle]}>订单总金额</Text>
                     <View style={styles.orderTotlePrice}>
                       <Text style={[styles.orderTotleSymble,styles.totalSymbleSame]}>¥</Text>
-                      <Text style={styles.orderTotlePrcie}>{this.state.totalAmount?this.state.totalAmount+this.state.freight:''}</Text>
+                      <Text style={styles.orderTotlePrcie}>{this.state.totalAmount}</Text>
                     </View>
                   </View>
                   <View style={[styles.cardPayment,styles.totleSame]}>
@@ -211,6 +205,14 @@ class Store extends Component{
                       <Image style={styles.cardPaymentRight} source={require('../images/right.png')}></Image>
                     </View>
                   </View>
+                  <View style={[styles.distributionFeeWrap,styles.totleSame]}>
+                    <Text style={[styles.totalTitleSame,styles.distributionFeeTitle]}>企业账户支付</Text>
+                    <View style={styles.distributionFee}>
+                      <Text style={styles.distributionFeeAdd}>+</Text>
+                      <Text style={[styles.distributionFeeSymble,styles.totalSymbleSame]}>¥</Text>
+                      <Text style={styles.distributionFeePrice}>{this.state.enterpriseAccountPayment}</Text>
+                    </View>
+                  </View>
                 </View>
               </ScrollView>
               <View style={styles.submit1}>
@@ -219,33 +221,51 @@ class Store extends Component{
                 <Text style={styles.submitPrice}>{this.state.totalAmount?this.state.totalAmount+this.state.freight:''}</Text>
                 <View style={styles.submitBtn1}>
                   <Text style={styles.submitBtn1Text} onPress={()=>{
-                    // const result = WeChat.pay(
-                    //   {
-                    //     partnerId: '1494347122',  // 商家向财付通申请的商家id
-                    //     prepayId: '1101000000140415649af9fc314aa427',   // 预支付订单
-                    //     nonceStr: 'Sign=WXPay',   // 随机串，防重发
-                    //     timeStamp: 'a462b76e7436e98e0ed6e13c64b4fd1c',  // 时间戳，防重发
-                    //     package: '1397527777',    // 商家根据财付通文档填写的数据和签名
-                    //     sign: '582282D72DD2B03AD892830965F428CB16E7A256'        // 商家根据微信开放平台文档对数据做的签名
-                    //   }
-                    // );
+                    let params={
+                      isApp: true,
+                      cartProducts: this.state.dataSource._dataBlob.s1,
+                      customerAddressId: global.addressId,
+                      customerCouponId: '',
+                      defaultDeliveryType: 0,
+                      enterpriseAccountPayment: this.state.enterpriseAccountPayment,
+                      pickUpPerson: '',
+                      pickUpPhone: '',
+                      pickUpPointsId: '',
+                      remark: '',
+                      isApp:true
+                    }
+                    clearAll()
+                    fetch(global.url+'/API/Order/Add','post',params,async (responseData)=>{
+                      // Alert.alert(JSON.stringify(responseData))
+                      if(!responseData.success){
+                         Alert.alert(responseData.message)
+                      }
+                      const result = await WeChat.pay(
+                        {
+                          partnerId: responseData.data.wxOrderModel.Partnerid,  // 商家向财付通申请的商家id
+                          prepayId: responseData.data.wxOrderModel.Prepayid,   // 预支付订单
+                          nonceStr: responseData.data.wxOrderModel.NonceStr,   // 随机串，防重发
+                          timeStamp:responseData.data.wxOrderModel.TimeStamp,  // 时间戳，防重发
+                          package: responseData.data.wxOrderModel.Package,    // 商家根据财付通文档填写的数据和签名
+                          sign: responseData.data.wxOrderModel.Sign        // 商家根据微信开放平台文档对数据做的签名
+                        }
+                      );
+                        if(result.errCode==0){
+                            Alert.alert('支付成功')
+                        }else if(result.errCode==-1){
+                            Alert.alert('签名错误、未注册APPID、项目设置APPID不正确、注册的APPID与设置的不匹配、其他异常等。')
+                        }else if(result.errCode==-2){
+                            Alert.alert('用户取消')
+                        }else{
+                           Alert.alert('未知错误')
+                           console.error(result)
+                        }
+                    },(error)=>{
+                       Alert.alert(JSON.stringify(error))
+                    }) 
                     
-                    // Alert.alert(JSON.stringify(result))
-                    let time=new Date().getTime()
-                    publicIP().then(ip => {
-                      Alert.alert(ip);
-                      //=> '47.122.71.234'
-                    });
                     // Alert.alert(DeviceInfo.getIPAddress())
-                    // let prepayParames={
-                    //   appid: "wx552eb71ba49e52ad",
-                    //   mch_id: "1494347122",
-                    //   nonce_str: time,
-                    //   body: '商品支付',
-                    //   out_trade_no: time+'sadfadsfd',
-                    //   total_fee: 1,
-                    //   spbill_create_ip:
-                    // }
+                    
                   }}>
                     提交订单
                   </Text>    
