@@ -149,7 +149,7 @@ class Index extends Component{
                     <TouchableHighlight style={styles.headerFunctionEach}>
                       <View style={styles.headerFunctionEach}>
                           <Image  style={styles.headerFunctionEachImg} source={require('../images/sign.png')}></Image>
-                          <Text  style={styles.headerFunctionEachText}>签到1</Text>
+                          <Text  style={styles.headerFunctionEachText}>签到</Text>
                         </View>
                     </TouchableHighlight>
                     <TouchableHighlight style={styles.headerFunctionEach}>
@@ -213,12 +213,12 @@ const styles = StyleSheet.create({
   headerSearchCodeText: {
     marginTop: pxToDp(10),
     fontSize:pxToDp(18),
-    textAlign:"center",
+    // textAlign:"center",
   },
   headerSearchBody: {
     position:"relative",
     width:pxToDp(560),
-    textAlign:'center',
+    // textAlign:'center',
     paddingTop:pxToDp(2),
     paddingBottom:pxToDp(2),
     paddingLeft:pxToDp(18),
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
   headerSearchMyText: {
     fontSize: pxToDp(18),
     marginTop: pxToDp(10),
-    textAlign: "center",
+    // textAlign: "center",
   },
   headerFunction: {
     flexDirection: 'row',
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
     height: pxToDp(84),
   },
   headerFunctionEachText: {
-    textAlign: 'center',
+    // textAlign: 'center',
     paddingTop: pxToDp(18),
     paddingBottom:pxToDp(30),
     fontSize: pxToDp(24),
@@ -293,9 +293,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center'
   },
   goods1NameText: {
-    textAlign:'center',
+    // textAlign:'center',
     fontSize: pxToDp(28),
-    textAlignVertical: 'center',
+    // textAlignVertical: 'center',
   },
   goods1NameActive: {
     backgroundColor: 'white'
@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
     marginTop:pxToDp(30)
   },
   goods3section:{
-    textAlign:'center',
+    // textAlign:'center',
     height:pxToDp(90),
     flexDirection:'row',
     lineHeight:pxToDp(90),
@@ -368,11 +368,11 @@ const styles = StyleSheet.create({
   },
   goods3bodyText: {
     marginTop:pxToDp(18),
-    textAlign:'center',
+    // textAlign:'center',
     fontSize:pxToDp(24),
     color:'#818181',
     height:pxToDp(62),
-    textAlignVertical: 'center'
+    // textAlignVertical: 'center'
   }
 });
 module.exports=Index 

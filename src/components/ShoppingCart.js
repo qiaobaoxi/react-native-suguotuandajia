@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
       borderWidth: pxToDp(1),
       borderColor: '#dadbde',
       borderRadius: 100,
-      textAlign: 'center',
+      // textAlign: 'center',
       justifyContent:'center',
       alignItems:"center",
     },
@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
       height: pxToDp(40),
       fontSize: pxToDp(28),
       color: '#2b2b2b',
-      textAlign: 'center',
+      // textAlign: 'center',
     },
     listGoodDetailsNumberFunctionAdd: {
       width: pxToDp(60),
@@ -420,7 +420,7 @@ const styles = StyleSheet.create({
       borderWidth: pxToDp(1),
       borderColor: '#ff8e00',
       borderRadius: 100,
-      textAlign: 'center',
+      // textAlign: 'center',
       justifyContent: 'center',
       alignItems: "center",
       backgroundColor: '#ff8e00'
@@ -466,12 +466,12 @@ const styles = StyleSheet.create({
     totalBtn: {
       width: pxToDp(215),
       height: pxToDp(105),
-      textAlign: 'center',
-      textAlignVertical: 'center',
+      // textAlign: 'center',
+      // textAlignVertical: 'center',
       backgroundColor:'#ff8e00',
       alignItems: 'center',
       justifyContent: 'center',
-      color:'white'
+      // color:'white'
     },
     totalBtnText: {
       color:'white'

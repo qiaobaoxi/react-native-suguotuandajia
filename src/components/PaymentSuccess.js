@@ -54,10 +54,13 @@ class Store extends Component{
               <Text style={styles.headerText}>付款成功</Text>
             </View>
             <View style={styles.body}>
-               <Image style={styles.paymentSuccessImg} source={require('../images/paymentSuccess.png')}></Image>
-               <Text style={styles.paymentSuccessTitle}>支付成功</Text>
-               <Text style={styles.paymentSuccessPrice}>¥200.00</Text>
-               <View style={styles.paymentSuccessBtn}><Text style={styles.paymentSuccessSeeOrder}>查看订单</Text><Text style={styles.paymentSuccessBackHome}>返回首页</Text></View>
+              <Image style={styles.paymentSuccessImg} source={require('../images/paymentSuccess.png')}></Image>
+              <Text style={styles.paymentSuccessTitle}>支付成功</Text>
+              <Text style={styles.paymentSuccessPrice}>¥200.00</Text>
+              <View style={styles.paymentSuccessBtn}>
+                <View style={styles.paymentSuccessBtn1}><Text style={styles.paymentSuccessSeeOrder}>查看订单</Text></View>
+                <View style={styles.paymentSuccessBtn2}><Text style={styles.paymentSuccessBackHome}>返回首页</Text></View>
+              </View>
             </View>
           </View> 
         );
@@ -105,17 +108,21 @@ const styles = StyleSheet.create({
       marginTop: pxToDp(94),
       flexDirection: 'row',
     },
-    paymentSuccessSeeOrder: {
+    paymentSuccessBtn1: {
       marginRight: pxToDp(18),
+      alignItems: 'center',
+      justifyContent: 'center',
       width: pxToDp(298),
       height: pxToDp(80),
       borderWidth: pxToDp(1),
       borderColor: '#b1b1b1',
-      textAlign: 'center',
-      textAlignVertical: 'center',
-      borderRadius: 4
+      borderRadius: 4,
     },
-    paymentSuccessBackHome: {
+    paymentSuccessSeeOrder: {
+    },
+    paymentSuccessBtn2: {
+      alignItems: 'center',
+      justifyContent: 'center',
       width: pxToDp(298),
       height: pxToDp(80),
       borderWidth: pxToDp(1),
@@ -123,8 +130,10 @@ const styles = StyleSheet.create({
       textAlign: 'center',
       textAlignVertical: 'center',
       backgroundColor: '#ff8e00',
-      color: 'white',
       borderRadius: 4
+    },
+    paymentSuccessBackHome: {
+      color: 'white'
     }
 });
 module.exports=Store

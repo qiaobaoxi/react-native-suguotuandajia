@@ -219,8 +219,8 @@ class Store extends Component{
                 <Text style={styles.submitTitle}>实付金额：</Text>
                 <Text style={styles.submitSymble}>¥</Text>
                 <Text style={styles.submitPrice}>{this.state.totalAmount?this.state.totalAmount+this.state.freight:''}</Text>
-                <View style={styles.submitBtn1}>
-                  <Text style={styles.submitBtn1Text} onPress={()=>{
+                <TouchableOpacity style={styles.submitBtn1} onPress={()=>{
+                    const { navigate } = this.props.navigation;
                     let params={
                       isApp: true,
                       cartProducts: this.state.dataSource._dataBlob.s1,
@@ -251,7 +251,7 @@ class Store extends Component{
                         }
                       );
                         if(result.errCode==0){
-                            Alert.alert('支付成功')
+                          navigate('PaymentSuccess')
                         }else if(result.errCode==-1){
                             Alert.alert('签名错误、未注册APPID、项目设置APPID不正确、注册的APPID与设置的不匹配、其他异常等。')
                         }else if(result.errCode==-2){
@@ -267,9 +267,10 @@ class Store extends Component{
                     // Alert.alert(DeviceInfo.getIPAddress())
                     
                   }}>
+                  <Text style={styles.submitBtn1Text} >
                     提交订单
                   </Text>    
-                </View>
+                </TouchableOpacity>
               </View>
               <Modal
                 animationType={"slide"}

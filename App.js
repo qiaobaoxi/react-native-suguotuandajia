@@ -29,6 +29,7 @@ import StorePayment from './src/components/StorePayment';
 import Store from './src/components/Store';
 import Order from './src/components/Order';
 import Login from './src/components/Login';
+import PaymentSuccess from './src/components/PaymentSuccess';
 import MyAllOrder from './src/components/MyAllOrder';
 import MyCardCoupons from './src/components/MyCardCoupons';
 import MyCollection from './src/components/MyCollection';
@@ -420,15 +421,16 @@ const styles = StyleSheet.create({
 });
 const RootNavigator = StackNavigator({
   Login: { screen: LoginScreen },
+  // PaymentSuccess:{
+  //   screen: PaymentSuccessScreen,
+  // },
   Home: {
     screen: HomeScreen,
   },
   Order: {
     screen: OrderScreen,
   },
-   PaymentSuccess:{
-    screen: PaymentSuccessScreen,
-  },
+   
   Store: { screen: StoreScreen },
   Goods: { screen: GoodsScreen },
   QRcode: { screen: QRcodeScreen },
