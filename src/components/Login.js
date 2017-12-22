@@ -13,7 +13,8 @@ import {
   ListView,
   TextInput,
   Button,
-  TouchableOpacity
+  TouchableOpacity,
+  StatusBar
 } from 'react-native';
 import fetch from '../js/fetch'
 const deviceWidthDp = Dimensions.get('window').width;
@@ -29,14 +30,56 @@ class Login extends Component{
         this.state={tel: '',code: '',disabled:true,codeDisabled:true,getCodeText:'获取动态密码'}
     }
     submit(){
-        // if(!this.state.tel){
-        //    Alert.alert('手机号不能为空')
-        //    return
-        // }
-        // if(!this.state.code){
-        //     Alert.alert('手机号不能为空')
-        //     return
-        //  }
+        const { navigate } = this.props.navigation;
+        let params={
+            mobileNo: this.state.tel,
+            smsCode: this.state.code
+        }
+        fetch(global.url+'/api/user/UserLogin','post',params,(responseData)=>{
+            if(responseData.result){
+                global.storage.load({
+                    key: 'goods',
+                    // syncInBackground(默认为true)意味着如果数据过期，
+                    // 在调用sync方法的同时先返回已经过期的数据。
+                    // 设置为false的话，则等待sync方法提供的最新数据(当然会需要更多时间)。
+                    syncInBackground: true,
+                    
+                    // 你还可以给sync方法传递额外的参数
+                    syncParams: {
+                    extraFetchOptions: {
+                    // 各种参数
+                    },
+                     someFlag: true,
+                    },
+                  }).then(ret => {
+                    let data = ret
+                    for(let i=0;i<data.length;i++){
+                        fetch(global.url+'/API/ProductDetail/joinCart','post',data[i],(responseData)=>{
+                            // this.setState({num:responseData.cartNum})
+                            // Alert.alert(JSON.stringify(responseData))
+                        })
+                    }
+                    global.storage.remove({
+                        key: 'goods'
+                    });
+                  }).catch(err => {
+                    console.warn(err.message);
+                    switch (err.name) {
+                        case 'NotFoundError':
+                            // TODO;
+                            break;
+                          case 'ExpiredError':
+                              // TODO
+                              break;
+                    }
+                  })
+                navigate('Home')
+            }else{
+                Alert.alert(responseData.errMsg)
+            }
+        },(error)=>{
+          console.log(responseData)
+        })
     }
     isDisabled(){
         if (this.state.tel.length == 11) {
@@ -51,36 +94,51 @@ class Login extends Component{
          }
     }
     render(){
-        const { navigate } = this.props.navigation;
+        const { navigate,goBack } = this.props.navigation;
         return(
-            <View>
-                <View style={styles.header}>
+            <View style={{backgroundColor:'white',height: '100%'}}>
+                <ImageBackground style={styles.header}  source={require('../images/headerBg.jpg')}>
+                    <TouchableOpacity style={styles.headerBack} onPress={()=>{goBack()}}>
+                        <Image style={styles.headerBackImg} source={require('../images/back1.png')}></Image>
+                    </TouchableOpacity>
                     <Text style={styles.headerText}>登录</Text>
-                </View>
+                </ImageBackground>    
                 <View>
                     <View style={styles.logo}>
                       <Image style={styles.logoImg} source={require('../images/login-logo.png')}></Image>
                     </View>
                     <View style={styles.tel}>
-                      <TextInput keyboardType="numeric" onChangeText={(text) => {
+                      <TextInput keyboardType="numeric" maxLength = {11} onChangeText={(text) => {
                           this.setState({tel:text},()=>{
                             this.isDisabled()
                           })
                         }} style={[styles.telInput,styles.input]} underlineColorAndroid={'transparent'} placeholder={'手机号'} placeholderTextColor={'#a2a2a2'}/>
                     </View>
                     <View style={[styles.code,styles.input]}>
-                      <TextInput keyboardType="numeric" onChangeText={(text) => {
+                      <TextInput keyboardType="numeric"  onChangeText={(text) => {
                           this.setState({code:text},()=>{
                             this.isDisabled()
                           })
                           }} style={styles.codeInput} underlineColorAndroid={'transparent'} placeholder={'邀请码'} placeholderTextColor={'#a2a2a2'}/>
                       <TouchableOpacity style={styles.button} onPress={()=>{
                           let num=60
+                          let params = {
+                            "mobileNo": this.state.tel,
+                          }
+                          fetch(global.url+'/api/user/GetSMScode','post',params,(responseData)=>{
+                              Alert.alert(JSON.stringify(responseData))
+                              if(!responseData.result){
+                                Alert.alert(errMsg)
+                              }
+                          },(error)=>{
+                            console.log(responseData)
+                          })
                           let timer=setInterval(()=>{
                              num--
                              this.setState({getCodeText:num+'s重新获取',codeDisabled: true})
                              if(num==0){
-                                 clearInterval(timer)
+                                
+                                clearInterval(timer)
                                 this.setState({getCodeText:'获取动态密码',codeDisabled: false})
                              }
                           },1000)
@@ -100,17 +158,32 @@ const styles = StyleSheet.create({
        height: pxToDp(134),
        backgroundColor: 'white',
        alignItems: 'center',
-       justifyContent: 'center'
+       justifyContent: 'center',
+       position: 'relative'
+    },
+    headerBack:{
+       position: 'absolute',
+       left: pxToDp(26),
+       bottom: pxToDp(32),
+       width: pxToDp(50),
+       height: pxToDp(50)
+    },
+    headerBackImg: {
+       marginTop: pxToDp(15), 
+       width: pxToDp(40),
+       height: pxToDp(40),
     },
     headerText: {
-       fontSize: pxToDp(36)
+       fontSize: pxToDp(36),
+       backgroundColor: 'rgba(0,0,0,0)',
+       color: 'white'
     },
     logo: {
       alignItems: 'center',
       justifyContent: 'center',
     },
     logoImg: {
-        marginTop: pxToDp(64),
+        marginTop: pxToDp(108),
         marginBottom: pxToDp(52),
         width: pxToDp(247),
         height: pxToDp(148),

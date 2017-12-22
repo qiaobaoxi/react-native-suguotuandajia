@@ -23,13 +23,20 @@ class Index extends Component{
     constructor(props) {
         super(props);
         console.disableYellowBox = true;
-        Cookie.set(global.url+'/web/myOrder.html?type=', 'userOpenId', 'oWgQ8uO1vM9GhWFNVncH6yVHF_4k').then(() => console.log('success'));
+        
     }
     handleMessage(navigate,e) {
-          navigate('OrderDetail')
+        //   navigate('OrderDetail')
     }
     render(){
-        const { navigate} = this.props.navigation;
+        const { navigate } = this.props.navigation;
+        Cookie.get(global.url).then((cookie) => {
+            if(!cookie||!cookie.userId){
+                navigate("Login")
+            }else{
+                Cookie.set(global.url+'/web/myOrder.html?type=', 'userOpenId', cookie.userId).then(() => console.log('success'));
+            }
+        })
         const { params} = this.props.navigation.state;
         let num=''
         if(params){

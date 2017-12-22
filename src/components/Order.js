@@ -44,12 +44,6 @@ function pxToDp(uiElementPx) {
 function scrrollHeight(uiElementHeight) {
   return deviceHeightDp-uiElementHeight;
 }
-function clearAll(){
-  CookieManager.clearAll()
-  .then(res => {
-    console.log('CookieManager.clearAll =>', res);
-  });
-}
 class Store extends Component{
     constructor(props) {
         super(props);
@@ -69,9 +63,10 @@ class Store extends Component{
            defaultDeliveryType: '0',
            products: global.goods
         }
-        clearAll()
         fetch(global.url+'/API/MyCart/checkout','post',params,(responseData)=>{
-            global.addressId=responseData.data.address.id
+              if(responseData.data.address){
+                global.addressId=responseData.data.address.id
+              }
               if(typeof responseData=='object'){
                 let num=0
                 for(let i=0;i<responseData.data.shopCartListDt.length;i++){
@@ -234,7 +229,6 @@ class Store extends Component{
                       remark: '',
                       isApp:true
                     }
-                    clearAll()
                     fetch(global.url+'/API/Order/Add','post',params,async (responseData)=>{
                       // Alert.alert(JSON.stringify(responseData))
                       if(!responseData.success){

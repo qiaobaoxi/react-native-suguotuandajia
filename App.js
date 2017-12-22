@@ -40,13 +40,30 @@ import AddressManage from './src/components/AddressManage';
 import OrderDetail from './src/components/OrderDetail';
 import CookieManager from 'react-native-cookies';
 import fetch from './src/js/fetch'
+import Storage from 'react-native-storage';
+import Cookie from 'react-native-cookie';
+var storage = new Storage({
+  // 最大容量，默认值1000条数据循环存储
+  size: 1000,
+
+  // 存储引擎：对于RN使用AsyncStorage，对于web使用window.localStorage
+  // 如果不指定则数据只会保存在内存中，重启后即丢失
+  storageBackend: AsyncStorage,
+    
+  // 数据过期时间，默认一整天（1000 * 3600 * 24 毫秒），设为null则永不过期
+  defaultExpires: 1000 * 3600 * 24,
+    
+  // 读写时在内存中缓存数据。默认启用。
+  enableCache: true,
+})  
+global.storage = storage;
 const deviceWidthDp = Dimensions.get('window').width;
 const uiWidthPx = 750;
-global.url='http://dalv.ipet66.com'
-CookieManager.clearAll()
-.then(res => {
-  console.log('CookieManager.clearAll =>', res);
-});
+global.url='http://wx.haipibaobao.com'
+// CookieManager.clearAll()
+// .then((res) => {
+//   console.log('CookieManager.clearAll =>', res);
+// });
 function pxToDp(uiElementPx) {
   return uiElementPx *  deviceWidthDp / uiWidthPx;
 }
@@ -54,33 +71,64 @@ class HomeScreen extends Component<{}> {
   componentDidMount() {
       SplashScreen.hide();
   }
-   constructor(props) {
-        super(props);
-        console.disableYellowBox = true;
-        this.state = {
-            selectedTab: 'index'
-        }
-        let num = 0
-        // AsyncStorage.getItem('goods',(error,result)=>{
-        //     if(result){
-        //       let goods=JSON.parse(result)
-        //       for(let i=0;i<goods.length;i++){
-        //          num+=goods[i].num
-        //       }
-        //       this.setState({num:num})
-        //     }
-        // })
-        fetch(global.url+'/api/home/getInitData','GET','',(responseData)=>{
-            this.setState({num:responseData.cartNum})
-        })
-    
-         DeviceEventEmitter.addListener('num', (num)=>{
-             this.setState({num:num})
-         });
-         
+  constructor(props) {
+    super(props);
+    console.disableYellowBox = true;
+    this.state = {
+        selectedTab: 'index'
     }
-    static navigationOptions = {
-      header:null
+    let num = 0
+    // AsyncStorage.getItem('goods',(error,result)=>{
+    //     if(result){
+    //       let goods=JSON.parse(result)
+    //       for(let i=0;i<goods.length;i++){
+    //          num+=goods[i].num
+    //       }
+    //       this.setState({num:num})
+    //     }
+    // })
+    Cookie.get(global.url).then((cookie) => {
+      if(cookie&&!!cookie.userId){
+        fetch(global.url+'/api/home/getInitData','GET','',(responseData)=>{
+          this.setState({num:responseData.cartNum})
+      })
+      }else{
+        global.storage.load({
+          key: 'goods',
+          // syncInBackground(默认为true)意味着如果数据过期，
+          // 在调用sync方法的同时先返回已经过期的数据。
+          // 设置为false的话，则等待sync方法提供的最新数据(当然会需要更多时间)。
+          syncInBackground: true,
+          
+          // 你还可以给sync方法传递额外的参数
+          syncParams: {
+          extraFetchOptions: {
+          // 各种参数
+          },
+        someFlag: true,
+          },
+        }).then(ret => {
+          let num=0
+          for(let i=0;i<ret.length;i++){
+            num+=Number(ret[i].count)
+          }
+          this.setState({num})
+        }).catch(err => {
+        console.warn(err.message);
+        switch (err.name) {
+            case 'NotFoundError':
+                // TODO;
+                break;
+              case 'ExpiredError':
+                  // TODO
+                  break;
+        }
+        })
+      }
+    });
+  }
+  static navigationOptions = {
+    header:null
   };
   render() {
     return (
@@ -88,6 +136,7 @@ class HomeScreen extends Component<{}> {
               <TabNavigator.Item
                   selected={this.state.selectedTab === 'index'}
                   title="首页"
+                  tabStyle={{color:'white'}}
                   titleStyle={{color:'#999'}}
                   selectedTitleStyle={{color:'#999'}}
                   renderIcon={() => <Image style={styles.menuImg1} source={require('./src/images/shouye.png')} />}
@@ -420,7 +469,7 @@ const styles = StyleSheet.create({
   }
 });
 const RootNavigator = StackNavigator({
-  Login: { screen: LoginScreen },
+  // Login: { screen: LoginScreen },
   // PaymentSuccess:{
   //   screen: PaymentSuccessScreen,
   // },
@@ -430,7 +479,7 @@ const RootNavigator = StackNavigator({
   Order: {
     screen: OrderScreen,
   },
-   
+  Login: { screen: LoginScreen },
   Store: { screen: StoreScreen },
   Goods: { screen: GoodsScreen },
   QRcode: { screen: QRcodeScreen },

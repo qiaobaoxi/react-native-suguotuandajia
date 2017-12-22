@@ -27,7 +27,7 @@ import {
   AsyncStorage,
   DeviceEventEmitter
 } from 'react-native';
-
+import Cookie from 'react-native-cookie';
 import fetch from '../js/fetch'
 const deviceWidthDp = Dimensions.get('window').width;
 
@@ -44,37 +44,82 @@ class Goods extends Component{
         super(props);
         console.disableYellowBox = true;
         var type1 = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
-        fetch(global.url+'/API/MyCart/getShopCartList','post','',(responseData)=>{
-            // this.setState({num:responseData.cartNum})
-            let goods =[]
-            let res=responseData.data.shopCartListDt
-            let isSelectedAll=false
-            let num=0
-            for( let i = 0; i < res.length; i++){
-                  let selected=false
-                  if(res[i].isChecked){
-                     selected=true
-                     num++
-                  }
-                   goods.push({
-                    id: res[i].id,
-                    img: res[i].goodImg,
-                    name: res[i].goodName,
-                    num: res[i].count,
-                    selected: selected,
-                    price: res[i].price,
-                    specId: res[i].goodSpecId,
-                    specifications:res[i].specs
-                   })
-               }
-               if(num==res.length){
-                  isSelectedAll=true
-               }
-               this.setState({dataSource:type1.cloneWithRows(goods),isSelectedAll})
-               this.total()
-        },(error)=>{
-            Alert.alert(error+'')    
-        }) 
+        Cookie.get(global.url).then((cookie) => {
+          if(cookie&&!!cookie.userId){
+            fetch(global.url+'/API/MyCart/getShopCartList','post','',(responseData)=>{
+              let goods =[]
+              let res=responseData.data.shopCartListDt
+              let isSelectedAll=false
+              let num=0
+              for( let i = 0; i < res.length; i++){
+                    let selected=false
+                    if(res[i].isChecked){
+                       selected=true
+                       num++
+                    }
+                     goods.push({
+                      id: res[i].id,
+                      img: res[i].goodImg,
+                      name: res[i].goodName,
+                      num: res[i].count,
+                      selected: selected,
+                      price: res[i].price,
+                      specId: res[i].goodSpecId,
+                      specifications:res[i].specs
+                     })
+                 }
+                 if(num==res.length){
+                    isSelectedAll=true
+                 }
+                 this.setState({dataSource:type1.cloneWithRows(goods),isSelectedAll})
+                 this.total()
+          },(error)=>{
+              Alert.alert(error+'')    
+          }) 
+          }else{
+            global.storage.load({
+              key: 'goods',
+              // syncInBackground(默认为true)意味着如果数据过期，
+              // 在调用sync方法的同时先返回已经过期的数据。
+              // 设置为false的话，则等待sync方法提供的最新数据(当然会需要更多时间)。
+              syncInBackground: true,
+              
+              // 你还可以给sync方法传递额外的参数
+              syncParams: {
+              extraFetchOptions: {
+              // 各种参数
+              },
+            someFlag: true,
+              },
+            }).then(ret => {
+              let goods =[]
+              for( let i = 0; i < ret.length; i++){
+                 goods.push({
+                  id: ret[i].id,
+                  img: ret[i].goodImg,
+                  name: ret[i].goodName,
+                  num: ret[i].count,
+                  selected: true,
+                  price: ret[i].price,
+                  specifications:ret[i].goodspecifications
+                 })
+             }
+              this.setState({dataSource:type1.cloneWithRows(goods),isSelectedAll:true})
+              this.total()
+            }).catch(err => {
+            console.warn(err.message);
+            switch (err.name) {
+                case 'NotFoundError':
+                    // TODO;
+                    break;
+                  case 'ExpiredError':
+                      // TODO
+                      break;
+            }
+            })
+          }
+        });
+        
         // AsyncStorage.getItem('goods',(error,result)=>{
         //     if(result){
         //       let goods =[]
@@ -106,7 +151,7 @@ class Goods extends Component{
                let price= this.state.dataSource._dataBlob.s1[i].price*this.state.dataSource._dataBlob.s1[i].num
                let num= this.state.dataSource._dataBlob.s1[i].num
                newTotalPrice+=price;
-               newTotalNum+=num
+               newTotalNum+=Number(num)
                global.goods.push({goodSpecId:this.state.dataSource._dataBlob.s1[i].specId,count:num})
              }
         }
@@ -123,9 +168,9 @@ class Goods extends Component{
       const { navigate, goBack} = this.props.navigation;
         return(
           <View style={{height:'100%'}}>
-            <View style={styles.header}>
+            <ImageBackground style={styles.header} source={require('../images/header.jpg')}>
                  <Text style={styles.headerText}>购物车</Text>
-            </View>
+            </ImageBackground>
             <ScrollView contentContainerStyle={styles.scrollView}>
               <ListView
                 contentContainerStyle={styles.List}
@@ -259,7 +304,14 @@ class Goods extends Component{
               </TouchableOpacity>
               <Text style={styles.listItemSelectedText}>全选</Text>
               <View style={styles.total}>
-                <Text style={styles.totalText}>合计：</Text><Text style={styles.totalSymble}>¥</Text><Text style={styles.totalPrice}>{this.state.totalPrice}</Text><TouchableOpacity style={styles.totalBtn} onPress={() => navigate('Order')}><Text style={styles.totalBtnText} >结算({this.state.totalNum})</Text></TouchableOpacity>
+                <Text style={styles.totalText}>合计：</Text><Text style={styles.totalSymble}>¥</Text><Text style={styles.totalPrice}>{this.state.totalPrice?this.state.totalPrice:'00'}</Text><TouchableOpacity style={this.state.totalNum?styles.totalBtn:styles.totalBtn1} disabled={this.state.totalNum?false:true} onPress={() => {
+                  Cookie.get(global.url).then((cookie) => {
+                    if(cookie&&!!cookie.userId){
+                      navigate('Order')
+                    }else{
+                      navigate('Login')
+                     }
+                  })}}><Text style={styles.totalBtnText} >结算({this.state.totalNum?this.state.totalNum:'0'})</Text></TouchableOpacity>
               </View>
             </View>
            </View> 
@@ -270,7 +322,7 @@ const styles = StyleSheet.create({
     header: {
       paddingTop: pxToDp(40),
       backgroundColor: 'white',
-      height: pxToDp(153),
+      height: pxToDp(130),
       flexDirection: 'row',
       alignItems: "center",
       borderBottomWidth: pxToDp(1),
@@ -288,7 +340,9 @@ const styles = StyleSheet.create({
       borderLeftWidth: pxToDp(1),
       borderLeftColor: '#daddde',
       paddingLeft: pxToDp(24),
-      fontSize: pxToDp(36)
+      fontSize: pxToDp(36),
+      backgroundColor: 'rgba(0,0,0,0)',
+      color: 'white'
     },
     scrollView: {
       marginTop: pxToDp(18),
@@ -408,7 +462,7 @@ const styles = StyleSheet.create({
       height: pxToDp(40),
       fontSize: pxToDp(28),
       color: '#2b2b2b',
-      // textAlign: 'center',
+      textAlign: 'center',
     },
     listGoodDetailsNumberFunctionAdd: {
       width: pxToDp(60),
@@ -432,7 +486,7 @@ const styles = StyleSheet.create({
     settlement: {
        flexDirection:'row',
        position:'absolute',
-       bottom:0,
+       bottom:8,
        width:'100%',
        height: pxToDp(104),
        backgroundColor: "white",
@@ -469,6 +523,16 @@ const styles = StyleSheet.create({
       // textAlign: 'center',
       // textAlignVertical: 'center',
       backgroundColor:'#ff8e00',
+      alignItems: 'center',
+      justifyContent: 'center',
+      // color:'white'
+    },
+    totalBtn1: {
+      width: pxToDp(215),
+      height: pxToDp(105),
+      // textAlign: 'center',
+      // textAlignVertical: 'center',
+      backgroundColor:'#a2a2a2',
       alignItems: 'center',
       justifyContent: 'center',
       // color:'white'

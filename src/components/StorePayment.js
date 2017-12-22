@@ -25,7 +25,7 @@ import {
   ListView,
   Modal
 } from 'react-native';
-
+import Cookie from 'react-native-cookie';
 import fetch from '../js/fetch'
 const deviceWidthDp = Dimensions.get('window').width;
 const deviceHeightDp = Dimensions.get('window').height;
@@ -49,8 +49,16 @@ class StorePayment extends Component{
             this.setState({OneDimensionalCode:responseData.data.barCodeSrc,QRcode:responseData.data.qrCodeSrc})   
         }) 
     }
+    componentDidUpdate(){
+      
+   }
     render(){
       const { navigate } = this.props.navigation;
+      Cookie.get(global.url).then((cookie) => {
+          if(!cookie||!cookie.userId){
+              navigate("Login")
+          }
+      })
         return(
           <View>
           <View style={styles.header}>
@@ -90,7 +98,7 @@ class StorePayment extends Component{
 const styles = StyleSheet.create({
      header: {
       paddingTop: pxToDp(40),
-      height: pxToDp(153),
+      height: pxToDp(130),
       flexDirection: 'row',
       alignItems: "center",
       justifyContent: 'center',

@@ -22,7 +22,8 @@ import {
   TouchableHighlight,
   TouchableOpacity,
   Alert,
-  ListView
+  ListView,
+  StatusBar
 } from 'react-native';
 
 import fetch from '../js/fetch'
@@ -53,17 +54,17 @@ class Index extends Component{
       };
       let url=global.url+'/API/home/initSgHome'
       fetch(url,'post','',(responseData)=>{
-            let menu1=[]
-            for(let i=0;i<responseData.data.length;i++){
-              if(i==0){
-                menu1.push({id:responseData.data[i].id,Text:responseData.data[i].name,isActive:true})
-                this.menu2(i,responseData.data)
-              }else{
-                menu1.push({id:responseData.data[i].id,Text:responseData.data[i].name,isActive:false})
-                // this.menu2(i,responseData.data)
-              }     
-            }
-            this.setState({dataSource:type1.cloneWithRows(menu1),menuData:responseData.data})
+        let menu1=[]
+        for(let i=0;i<responseData.data.length;i++){
+          if(i==0){
+            menu1.push({id:responseData.data[i].id,Text:responseData.data[i].name,isActive:true})
+            this.menu2(i,responseData.data)
+          }else{
+            menu1.push({id:responseData.data[i].id,Text:responseData.data[i].name,isActive:false})
+            // this.menu2(i,responseData.data)
+          }     
+        }
+        this.setState({dataSource:type1.cloneWithRows(menu1),menuData:responseData.data})
       })
     }
     menu2(index,data){
@@ -74,8 +75,9 @@ class Index extends Component{
         if(typeof data != 'object'){
           return
         }
+        console.log(data[index])
         // Alert.alert(''+index)
-        for(let i=0;i<data[index].ad.length;i++){
+        for(let i=0;i<data[index].categorys.length;i++){
           // Alert.alert(JSON.stringify(data[index].categorys[i]))
             menu2.push({id:data[index].categorys[i].id,name:data[index].categorys[i].name,img:data[index].categorys[i].img})
         }
@@ -123,48 +125,34 @@ class Index extends Component{
       const { navigate } = this.props.navigation;
         return(
              <View>
+               <StatusBar
+                  barStyle="light-content"
+                />
                 <View style={styles.header}>
-                          <View style={styles.headerSearch}>
-                                <TouchableOpacity style={{paddingLeft:pxToDp(25)}}  onPress={() => navigate('QRcode')} >
-                                  <View style={styles.headerSearchCode}>
-                                      <Image style={styles.headerSearchCodeImg} source={require('../images/QRcode.png')}></Image> 
-                                      <Text style={styles.headerSearchCodeText}>绑卡</Text>
-                                  </View>
-                                  </TouchableOpacity>
-                                  <View  style={styles.headerSearchBody}>
-                                      <TextInput
-                              style={styles.headerSearchBodyInput}
-                              underlineColorAndroid={'transparent'}
-                              placeholder={'输入关键字直接搜索'}
-                              placeholderTextColor={'#a6a6a6'}
+                  <ImageBackground style={styles.headerSearch} source={require('../images/header.jpg')}>
+                          <TouchableOpacity style={{paddingLeft:pxToDp(25)}}  onPress={() => navigate('QRcode')} >
+                            <View style={styles.headerSearchCode}>
+                                <Image style={styles.headerSearchCodeImg} source={require('../images/QRcode.png')}></Image> 
+                                <Text style={styles.headerSearchCodeText}>绑卡</Text>
+                                </View>
+                                </TouchableOpacity>
+                                <View  style={styles.headerSearchBody}>
+                                    <TextInput
+                            style={styles.headerSearchBodyInput}
+                            underlineColorAndroid={'transparent'}
+                            placeholder={'输入关键字直接搜索'}
+                            placeholderTextColor={'#a6a6a6'}
                           />
                           <Image style={styles.headerSearchImg} source={require('../images/search.png')}></Image>
                         </View>
                         <TouchableOpacity style={styles.headerSearchMy} onPress={() => navigate('Store')}>
-                            <Image style={styles.headerSearchMyImg} source={require('../images/wode.png')}></Image>
+                            <Image style={styles.headerSearchMyImg} source={require('../images/store.png')}></Image>
                             <Text  style={styles.headerSearchMyText}>门店</Text>
                         </TouchableOpacity>
-                    </View>
-                  <View style={styles.headerFunction}>
-                    <TouchableHighlight style={styles.headerFunctionEach}>
-                      <View style={styles.headerFunctionEach}>
-                          <Image  style={styles.headerFunctionEachImg} source={require('../images/sign.png')}></Image>
-                          <Text  style={styles.headerFunctionEachText}>签到</Text>
-                        </View>
-                    </TouchableHighlight>
-                    <TouchableHighlight style={styles.headerFunctionEach}>
-                      <View style={styles.headerFunctionEach}>
-                          <Image style={styles.headerFunctionEachImg} source={require('../images/wholesale.png')}></Image>
-                          <Text style={styles.headerFunctionEachText}>团购/批发</Text>
-                      </View> 
-                    </TouchableHighlight>
-                    <TouchableHighlight style={styles.headerFunctionEach}>
-                      <View style={styles.headerFunctionEach}>
-                          <Image style={styles.headerFunctionEachImg} source={require('../images/sinceSome.png')}></Image>
-                          <Text style={styles.headerFunctionEachText}>自提点</Text>
-                        </View> 
-                    </TouchableHighlight>
-                </View>
+                  </ImageBackground>
+                  <TouchableOpacity style={styles.headerFunction}>
+                    <Image style={styles.gorupBuy} source={require('../images/groupBuy.png')}></Image>
+                 </TouchableOpacity>
                 </View>
                 <View style={styles.goodsWrap}>
                     <ScrollView style={styles.goods1} showsVerticalScrollIndicator={false}> 
@@ -192,15 +180,17 @@ const styles = StyleSheet.create({
     borderBottomWidth:pxToDp(1),
     borderBottomColor:'#daddde',
   },
+  gorupBuy: {
+    width: '100%',
+    height: pxToDp(183)
+  },
   headerSearch: {
       flexDirection:'row',
       paddingRight:pxToDp(25),
       paddingTop:pxToDp(60),
       paddingBottom:pxToDp(18),
-      borderBottomWidth:pxToDp(2),
-      borderBottomColor:'#daddde',
       backgroundColor:'white',
-      height: pxToDp(153),
+      height: pxToDp(130),
   },
   headerSearchCode: {
       width:pxToDp(72),
@@ -214,6 +204,8 @@ const styles = StyleSheet.create({
     marginTop: pxToDp(10),
     fontSize:pxToDp(18),
     // textAlign:"center",
+    backgroundColor:'rgba(0,0,0,0)',
+    color: 'white'
   },
   headerSearchBody: {
     position:"relative",
@@ -252,11 +244,15 @@ const styles = StyleSheet.create({
     fontSize: pxToDp(18),
     marginTop: pxToDp(10),
     // textAlign: "center",
+    backgroundColor:'rgba(0,0,0,0)',
+    color: 'white'
   },
   headerFunction: {
     flexDirection: 'row',
     backgroundColor:'white',
-    height: pxToDp(183)
+    height: pxToDp(223),
+    paddingTop: pxToDp(20),
+    paddingBottom: pxToDp(20)
   },
   headerFunctionEach: {
       flex:1,
@@ -325,6 +321,7 @@ const styles = StyleSheet.create({
   goods2Bnner: {
     width:pxToDp(526),
     height:pxToDp(200),
+    marginTop: pxToDp(28)
   },
   goods3: {
     flexDirection:'row',

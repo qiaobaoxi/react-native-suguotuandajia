@@ -16,6 +16,7 @@
 		"react-native-public-ip": "^1.0.0",
 		"react-native-refreshable-listview": "^2.0.0-beta4",
 		"react-native-splash-screen": "^3.0.6",
+		"react-native-storage": "^0.2.2",
 		"react-native-wechat": "^1.9.9"
 	},
 	"devDependencies": {

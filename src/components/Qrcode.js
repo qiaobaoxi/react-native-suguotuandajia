@@ -12,7 +12,7 @@ import
     Image,
     Alert
 } from 'react-native';
-
+import Cookie from 'react-native-cookie';
 /**
  * 扫描界面遮罩
  * 单独写一个类，方便拷贝使用
@@ -216,8 +216,9 @@ class QRScannerRectView extends Component {
             }]}/>
         }
     }
-
+    
     render() {
+        // console.log(this.props)
         const animatedStyle = {
             transform: [
                 {translateY: this.state.animatedValue}
@@ -392,6 +393,13 @@ class QRScannerView extends Component {
          Alert.alert(data.data)
     }
     render() {
+        const { navigate } = this.props.navigation;
+        Cookie.get(global.url).then((cookie) => {
+            console.log(cookie)
+            if(!cookie||!cookie.userId){
+                navigate("Login")
+            }
+        })
         return (
             <View style={{flex: 1}}>
                 <Camera

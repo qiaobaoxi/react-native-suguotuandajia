@@ -29,7 +29,8 @@ import {
   SectionList,
   FlatList
 } from 'react-native';
-
+import CookieManager from 'react-native-cookies';
+import Cookie from 'react-native-cookie';
 import fetch from '../js/fetch'
 const deviceWidthDp = Dimensions.get('window').width;
 const deviceHeightDp = Dimensions.get('window').height;
@@ -64,10 +65,6 @@ class Goods extends Component{
           getNum:params.getNum
         }
         this.getGoodsList()
-        // AsyncStorage.getItem('goods',(error,result)=>{
-        //   this.setState({alrGoods:JSON.parse(result)})
-        //   this.getGoodsList()
-        // })
     }
     getGoodsList(){
       fetch(this.state.url,'post',this.state.params1,(responseData)=>{
@@ -95,6 +92,7 @@ class Goods extends Component{
               }
             }
           }
+          
           this.state.goods.push({id: good.id,
             img: good.goodImg,
             name: good.goodName,
@@ -106,22 +104,64 @@ class Goods extends Component{
         this.setState({dataSource:this.state.goods,isLoad:false,isNextSuccess:1});
         clearTimeout(this.state.timer)
       })
-      fetch(global.url+'/API/MyCart/getShopCartList','post','',(responseData)=>{
-        if(responseData.success){
-          let totalPrice = 0
-          let cartNum = 0
-          global.goods = []
-          for(let i = 0;i < responseData.data.shopCartListDt.length;i++){
-            totalPrice += responseData.data.shopCartListDt[i].price*responseData.data.shopCartListDt[i].count
-            cartNum += responseData.data.shopCartListDt[i].count
-            global.goods.push({goodSpecId:responseData.data.shopCartListDt[i].goodSpecId,count:responseData.data.shopCartListDt[i].count})
-          }
-          totalPrice = totalPrice.toFixed(2)
-          this.setState({cartNum,totalPrice});
+      Cookie.get(global.url).then((cookie) => {
+        if(cookie&&!!cookie.userId){
+          fetch(global.url+'/API/MyCart/getShopCartList','post','',(responseData)=>{
+            if(responseData.success){
+              let totalPrice = 0
+              let cartNum = 0
+              global.goods = []
+              for(let i = 0;i < responseData.data.shopCartListDt.length;i++){
+                totalPrice += responseData.data.shopCartListDt[i].price*responseData.data.shopCartListDt[i].count
+                cartNum += responseData.data.shopCartListDt[i].count
+                global.goods.push({goodSpecId:responseData.data.shopCartListDt[i].goodSpecId,count:responseData.data.shopCartListDt[i].count})
+              }
+              totalPrice = totalPrice.toFixed(2)
+              this.setState({cartNum,totalPrice});
+            }else{
+              Alert.alert(JSON.stringify(global.storageGoods))
+            }
+          })
         }else{
-          Alert.alert(responseData.message)
+          global.storage.load({
+            key: 'goods',
+            // syncInBackground(默认为true)意味着如果数据过期，
+            // 在调用sync方法的同时先返回已经过期的数据。
+            // 设置为false的话，则等待sync方法提供的最新数据(当然会需要更多时间)。
+            syncInBackground: true,
+            
+            // 你还可以给sync方法传递额外的参数
+            syncParams: {
+            extraFetchOptions: {
+            // 各种参数
+            },
+             someFlag: true,
+            },
+          }).then(ret => {
+            let data=ret
+            let num=0
+            let totalPrice=0
+            for(let i=0;i<data.length;i++){
+              num+=Number(data[i].count)
+              let price=data[i].count*data[i].price
+              totalPrice+=price
+            }
+            totalPrice=totalPrice.toFixed(2)
+            this.setState({totalPrice: totalPrice,cartNum: num})
+          }).catch(err => {
+            console.warn(err.message);
+            switch (err.name) {
+                case 'NotFoundError':
+                    // TODO;
+                    break;
+                  case 'ExpiredError':
+                      // TODO
+                      break;
+            }
+          })
         }
-      })
+      });
+      
     }
     setModalVisible(visible) {
         this.setState({modalVisible: visible});
@@ -140,12 +180,14 @@ class Goods extends Component{
                                 let good=this.state.dataSource[i]
                                 let params={
                                   id: good.id,
-                                  count: '1',
+                                  count: 1,
                                   goodImg: good.img,
                                   goodName: good.name,
                                   goodspecifications: good.specsId,
                                   price: good.price
                                 }
+                                Cookie.get(global.url).then((cookie) => {
+                                  if(cookie&&!!cookie.userId){
                                     fetch(global.url+'/API/ProductDetail/joinCart','post',params,(responseData)=>{
                                       this.getGoodsList()
                                         // this.setState({num:responseData.cartNum})
@@ -153,51 +195,83 @@ class Goods extends Component{
                                     })
                                     this.state.dataSource[i].num++ 
                                     this.state.getNum()
-                                    // AsyncStorage.getItem('goods',(error,result)=>{
-                                    // if (error!=null){  
-                                    //    console.log("error message:"+error.message);  
-                                    //    return;  
-                                    // } 
-                                    // let goods=[] 
-                                    // if(result){
-                                    //   let index=-1
-                                    //   let res=JSON.parse(result)
-                                    //   for (let i=0;i<res.length;i++)  {
-                                    //       if (res[i].id==good.id) {
-                                    //         index=i   
-                                    //       }
-                                    //   }
-                                    //   if (index!=-1) {
-                                    //     res[index].num++
-                                    //     goods = res
-                                    //   } else {
-                                    //     res.push(good)
-                                    //     Alert.alert(JSON.stringify(res))
-                                    //     goods = res
-                                    //   }
-                                    //    AsyncStorage.setItem("goods",JSON.stringify(goods)).then(  
-                                    //    ()=>{  
-                                    //         Alert.alert("write one success ");  
-                                    //      }).catch(  
-                                    //         (error)=>{  
-                                    //          Alert.alert("write one error");  
-                                    //         }  
-                                    //   ); 
-                                    // }else{
-                                      // if(result==null){
-                                      //   goods.push(good)
-                                      //   AsyncStorage.setItem("goods",JSON.stringify(goods)).then(  
-                                      //    ()=>{  
-                                      //         Alert.alert("write one success");  
-                                      //      }).catch(  
-                                      //         (error)=>{  
-                                      //          Alert.alert("write one error");  
-                                      //         }  
-                                      //   );
-                                      // } 
-                                    // }
-                                // })
+                                  }else{
+                                    
+                                    global.storage.load({
+                                      key: 'goods',
+                                      // syncInBackground(默认为true)意味着如果数据过期，
+                                      // 在调用sync方法的同时先返回已经过期的数据。
+                                      // 设置为false的话，则等待sync方法提供的最新数据(当然会需要更多时间)。
+                                      syncInBackground: true,
+                                      
+                                      // 你还可以给sync方法传递额外的参数
+                                      syncParams: {
+                                      extraFetchOptions: {
+                                      // 各种参数
+                                      },
+                                       someFlag: true,
+                                      },
+                                    }).then(ret => {
+                                      let data=[]
+                                      let index=-1
+                                      for(let i = 0;i < ret.length;i++){
+                                        if(ret[i].id==params.id){
+                                          index=i
+                                        }
+                                      }
+                                      if(index>=0){
+                                        ret[index].count++
+                                        data=ret
+                                      }else{
+                                        data=ret
+                                        data.push(params)
+                                      }
+                                      let num=0
+                                      let totalPrice=0
+                                      for(let i=0;i<data.length;i++){
+                                        num+=Number(data[i].count)
+                                        let price=data[i].count*data[i].price
+                                        totalPrice+=price
+                                      }
+                                      totalPrice=totalPrice.toFixed(2)
+                                      this.setState({totalPrice: totalPrice,cartNum: num})
+                                      global.storage.save({
+                                        key: 'goods',  // 注意:请不要在key中使用_下划线符号!
+                                        data: data
+                                      });
+                                    }).catch(err => {
+                                      console.warn(err.message);
+                                      switch (err.name) {
+                                          case 'NotFoundError':
+                                              // TODO;
+                                              break;
+                                            case 'ExpiredError':
+                                                // TODO
+                                                break;
+                                      }
+                                    })
+                                    let That=this
+                                  global.storage.sync = {
+                                    goods(){
+                                      let data=[]
+                                      let num=0
+                                      let totalPrice=0
+                                      data.push(params)
+                                      totalPrice += params.price
+                                      num += Number(params.count)
+                                      That.setState({totalPrice: totalPrice, cartNum: num})
+                                      // this.setState({totalPrice: params.price,cartNum: params.count})
+                                      global.storage.save({
+                                        key: 'goods',  // 注意:请不要在key中使用_下划线符号!
+                                        data: data
+                                      });
+                                    }
+                                  }
+                                //     this.getGoodsList()
+                                  }
+                                });
                             }
+                          
                          }
                          var newData = JSON.parse(JSON.stringify(this.state.dataSource));
                          this.setState({dataSource:newData})
@@ -208,7 +282,6 @@ class Goods extends Component{
     }
     _contentViewScroll(e:Object){
       if(this.state.dataSource.length>0&&this.state.isNextSuccess!=0){
-        
         clearTimeout(this.state.timer)
         this.setState({isLoad:true})
           this.state.timer=setTimeout(()=>{
@@ -224,9 +297,9 @@ class Goods extends Component{
       const { navigate,goBack } = this.props.navigation;
         return(
             <View>
-              <View style={styles.search}>
-                <TouchableOpacity style={{height:'100%',justifyContent:"center"}} onPress={() => goBack()}>
-                  <Image style={styles.searchBack} source={require('../images/back.png')}></Image>
+              <ImageBackground style={styles.search} source={require('../images/headerBg.jpg')}>
+                <TouchableOpacity style={{height:'100%',justifyContent:"center"}} onPress={() => navigate('Home')}>
+                  <Image style={styles.searchBack} source={require('../images/back1.png')}></Image>
                 </TouchableOpacity>
                 <TextInput
                     style={styles.searchInput}
@@ -235,7 +308,7 @@ class Goods extends Component{
                     placeholderTextColor={'#a6a6a6'}
                  />
                  <Image style={styles.searchImg} source={require('../images/search.png')}></Image>
-              </View>
+              </ImageBackground>
               {/* <SectionList
                   // stickySectionHeadersEnabled={true}
                   onEndReached={()=>{this._contentViewScroll()}}
@@ -253,16 +326,24 @@ class Goods extends Component{
                   data={this.state.dataSource}
                   extraData={this.state}
                   renderItem={({item,index}) => this._renderRow(item,index)}
-                  ListFooterComponent={()=><View style={this.state.isLoad?styles.more:styles.hidden}><Text style={styles.moreText}>加载更多</Text><Image source={require('../images/load.gif')}></Image></View>}
+                  ListFooterComponent={()=><View style={this.state.isLoad?styles.more:styles.hidden}><Text style={styles.moreText}>加载中</Text></View>}
                   onEndReached={this._contentViewScroll.bind(this)}
                   onEndReachedThreshold={0}
                   getItemLayout={(data, index) => ( {length: pxToDp(550), offset: pxToDp(550) * index, index} )}
               />
                <View style={styles.settlementColumn}>
                   <Image style={styles.shoppingCart} source={require('../images/goodsIncart.png')}></Image>
-                  <View style={this.state.cartNum<100?styles.badgeWrap:styles.badgeWrap1}><Text style={styles.badge}>{this.state.cartNum}</Text></View>
+                  <View style={this.state.cartNum<100?styles.badgeWrap:styles.badgeWrap1}><Text style={styles.badge}>{this.state.cartNum?this.state.cartNum:0}</Text></View>
                   <View style={styles.goPayWrap}>
-                    <Text style={styles.goPayTotalPrice}>合计：</Text><Text style={styles.goPayTotalPriceSymbol}>¥</Text><Text style={styles.totalPrice}>{this.state.totalPrice}</Text><TouchableHighlight style={styles.settlement} onPress={() => navigate('Order')}><Text style={{color: 'white',}}>去结算</Text></TouchableHighlight>
+                    <Text style={styles.goPayTotalPrice}>合计：</Text><Text style={styles.goPayTotalPriceSymbol}>¥</Text><Text style={styles.totalPrice}>{this.state.totalPrice?this.state.totalPrice:0}</Text><TouchableHighlight style={this.state.totalPrice?styles.settlement:styles.settlement1} disabled={this.state.totalPrice?false:true} onPress={() => 
+                      Cookie.get(global.url).then((cookie) => {
+                        if(cookie&&!!cookie.userId){
+                          navigate('Order')
+                        }else{
+                          navigate('Login')
+                         }
+                      })
+                      }><Text style={{color: 'white',}}>去结算</Text></TouchableHighlight>
                   </View>
                </View>
                <Modal
@@ -349,7 +430,7 @@ const styles = StyleSheet.create({
     search: {
       flexDirection :'row',
       alignItems: "center",
-      height: pxToDp(153),
+      height: pxToDp(130),
       paddingTop: pxToDp(40),
       borderWidth: pxToDp(1),
       borderBottomColor: '#daddde',
@@ -359,8 +440,8 @@ const styles = StyleSheet.create({
     searchBack: {
       marginLeft: pxToDp(26),
       marginRight: pxToDp(26),
-      width: pxToDp(23),
-      height: pxToDp(40),
+      width: pxToDp(30),
+      height: pxToDp(33),
     },
     searchInput: {
       padding: 0,
@@ -372,7 +453,7 @@ const styles = StyleSheet.create({
     },
     searchImg: {
       position:'absolute',
-      top: pxToDp(80),
+      top: pxToDp(67),
       right: pxToDp(46),
       width: pxToDp(34),
       height: pxToDp(34),
@@ -380,7 +461,7 @@ const styles = StyleSheet.create({
     listWrap:{
       // flexDirection:'row',
       // flexWrap:'wrap',
-      paddingBottom: pxToDp(294),
+      paddingBottom: pxToDp(250),
     },
     goods:{
       marginTop: pxToDp(10),
@@ -697,7 +778,7 @@ const styles = StyleSheet.create({
        backgroundColor: 'rgba(0,0,0,0)',
        paddingTop: pxToDp(34),
        position: 'absolute',
-       bottom:82,
+       bottom:69,
        left: 0,
        right: 0,
       //  backgroundColor: 'blue',
@@ -736,6 +817,18 @@ const styles = StyleSheet.create({
       height: "100%",
       width: pxToDp(214),
       backgroundColor: '#ff8e00',
+      textAlign: 'center',
+      textAlignVertical: 'center',
+      color: 'white',
+      justifyContent: 'center',
+      alignItems: 'center'
+    },
+    settlement1: {
+      position:'absolute',
+      right: 0,
+      height: "100%",
+      width: pxToDp(214),
+      backgroundColor: '#a2a2a2',
       textAlign: 'center',
       textAlignVertical: 'center',
       color: 'white',
