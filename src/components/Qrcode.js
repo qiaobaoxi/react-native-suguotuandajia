@@ -10,9 +10,20 @@ import
     Easing,
     Text,
     Image,
-    Alert
+    Alert,
+    Dimensions,
+    TouchableOpacity,
+    StatusBar,
+    ImageBackground
 } from 'react-native';
 import Cookie from 'react-native-cookie';
+const deviceWidthDp = Dimensions.get('window').width;
+
+const uiWidthPx = 750;
+
+function pxToDp(uiElementPx) {
+  return uiElementPx *  deviceWidthDp / uiWidthPx;
+}
 /**
  * 扫描界面遮罩
  * 单独写一个类，方便拷贝使用
@@ -388,22 +399,42 @@ class QRScannerView extends Component {
         super(props);
         //通过这句代码屏蔽 YellowBox
         console.disableYellowBox = true;
+        this.state={timer:null}
     }
     onScanResultReceived(data){
-         Alert.alert(data.data)
+        const { navigate } = this.props.navigation;
+        clearTimeout(this.state.timer)
+        this.state.timer=setTimeout(()=>{
+            if(data.data.indexOf('http')){
+                navigate('About',{text:data.data})
+            }else{
+                navigate('Cart',{text:data.data})
+            }
+        },100)
     }
     render() {
         const { navigate } = this.props.navigation;
         Cookie.get(global.url).then((cookie) => {
-            console.log(cookie)
             if(!cookie||!cookie.userId){
                 navigate("Login")
+                return
             }
         })
         return (
             <View style={{flex: 1}}>
+                <ImageBackground style={styles.header} source={require('../images/headerBg.jpg')}>
+                    <TouchableOpacity style={{height:'100%',justifyContent:"center"}} onPress={() => navigate('Home')}>
+                        <Image style={styles.headerBack} source={require('../images/back1.png')}></Image>
+                    </TouchableOpacity>
+                    <Text style={styles.headerText}>请扫描二维码</Text>
+                </ImageBackground>
                 <Camera
-                    onBarCodeRead={this.onScanResultReceived}
+                    onBarCodeRead={this.onScanResultReceived.bind(this)}
+                    ref={(cam) => {
+                        this.camera = cam;
+                    }}
+                    mirrorImage={false}
+                    aspect={Camera.constants.Aspect.fill}
                     style={{flex: 1}}
                 >
                     {/*绘制顶部标题栏组件*/}
@@ -445,6 +476,28 @@ class QRScannerView extends Component {
 
 
 const styles = StyleSheet.create({
+    header: {
+        backgroundColor: 'white',
+        height: pxToDp(96),
+        flexDirection: 'row',
+        alignItems: "center",
+        borderBottomWidth: pxToDp(1),
+        borderBottomColor:'#daddde'
+      },
+      headerBack: {
+        marginLeft: pxToDp(26),
+        marginRight: pxToDp(26),
+        width: pxToDp(23),
+        height: pxToDp(40),
+      },
+      headerText: {
+        borderLeftWidth: pxToDp(1),
+        borderLeftColor: '#daddde',
+        paddingLeft: pxToDp(24),
+        fontSize: pxToDp(36),
+        color: 'white',
+        backgroundColor:'rgba(0,0,0,0)'
+      },
     buttonsContainer: {
         position: 'absolute',
         height: 100,

@@ -25,7 +25,7 @@ import {
   ListView,
   StatusBar
 } from 'react-native';
-
+import Cookie from 'react-native-cookie';
 import fetch from '../js/fetch'
 const deviceWidthDp = Dimensions.get('window').width;
 const deviceHeightDp = Dimensions.get('window').height;
@@ -51,6 +51,7 @@ class Index extends Component{
           type2:type2.cloneWithRows([
            
           ]),
+          searchText: ''
       };
       let url=global.url+'/API/home/initSgHome'
       fetch(url,'post','',(responseData)=>{
@@ -113,7 +114,10 @@ class Index extends Component{
           </View>
         );
       }
-
+      _onPressSearch(event){
+        const { navigate } = this.props.navigation;
+        navigate('Goods',{goodname:this.state.searchText})
+      }
       // _renderSectionHeader(data, sectionID) {
       //   return (
       //     <View style={styles.goods3section}>
@@ -121,7 +125,7 @@ class Index extends Component{
       //     </View>
       //   );
       // }
-    render(){
+     render(){
       const { navigate } = this.props.navigation;
         return(
              <View>
@@ -130,7 +134,16 @@ class Index extends Component{
                 />
                 <View style={styles.header}>
                   <ImageBackground style={styles.headerSearch} source={require('../images/header.jpg')}>
-                          <TouchableOpacity style={{paddingLeft:pxToDp(25)}}  onPress={() => navigate('QRcode')} >
+                          <TouchableOpacity style={{paddingLeft:pxToDp(25)}}  onPress={() => {
+                            
+                            Cookie.get(global.url).then((cookie) => {
+                              if(!cookie||!cookie.userId){
+                                  navigate("Login")
+                              }else{
+                                navigate('QRcode')} 
+                              }
+                          )
+                        }}>
                             <View style={styles.headerSearchCode}>
                                 <Image style={styles.headerSearchCodeImg} source={require('../images/QRcode.png')}></Image> 
                                 <Text style={styles.headerSearchCodeText}>绑卡</Text>
@@ -138,20 +151,32 @@ class Index extends Component{
                                 </TouchableOpacity>
                                 <View  style={styles.headerSearchBody}>
                                     <TextInput
+                                    returnKeyType={"search"}
+                                    onEndEditing={this._onPressSearch.bind(this)}
                             style={styles.headerSearchBodyInput}
                             underlineColorAndroid={'transparent'}
+                            onChangeText={(text) => this.setState({searchText:text})}
                             placeholder={'输入关键字直接搜索'}
                             placeholderTextColor={'#a6a6a6'}
                           />
-                          <Image style={styles.headerSearchImg} source={require('../images/search.png')}></Image>
+                          <TouchableOpacity style={styles.headerSearchImgWrap} onPress ={()=> navigate('Goods',{goodname:this.state.searchText})}><Image style={styles.headerSearchImg} source={require('../images/search.png')}></Image></TouchableOpacity>
                         </View>
                         <TouchableOpacity style={styles.headerSearchMy} onPress={() => navigate('Store')}>
                             <Image style={styles.headerSearchMyImg} source={require('../images/store.png')}></Image>
                             <Text  style={styles.headerSearchMyText}>门店</Text>
                         </TouchableOpacity>
                   </ImageBackground>
-                  <TouchableOpacity style={styles.headerFunction}>
-                    <Image style={styles.gorupBuy} source={require('../images/groupBuy.png')}></Image>
+                  <TouchableOpacity style={styles.headerFunction} onPress={()=>{
+                      Cookie.get(global.url).then((cookie) => {
+                        if(!cookie||!cookie.userId){
+                            navigate("Login")
+                        }else{
+                          navigate('GroupArrivesHome')
+                        }
+                    })
+                    
+                  }} >
+                    <Image style={styles.gorupBuy} source={require('../images/groupBuy.jpg')}></Image>
                  </TouchableOpacity>
                 </View>
                 <View style={styles.goodsWrap}>
@@ -225,10 +250,12 @@ const styles = StyleSheet.create({
     padding:0,
     paddingLeft:pxToDp(36),
   },
-  headerSearchImg: {
+  headerSearchImgWrap:{
     position:'absolute',
     right:pxToDp(22),
     top:pxToDp(8),
+  },
+  headerSearchImg: {
     width:pxToDp(38),
     height:pxToDp(38)
   },

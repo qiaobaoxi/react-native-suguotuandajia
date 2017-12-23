@@ -53,7 +53,7 @@ class Store extends Component{
           dataSource: ds.cloneWithRows([]),
           modelVistibal: false,
           payNum: 1,
-          payName: '支付宝',
+          payName: '微信支付',
         };
         if(!global.addressId){
           global.addressId=0
@@ -70,9 +70,14 @@ class Store extends Component{
               if(typeof responseData=='object'){
                 let num=0
                 for(let i=0;i<responseData.data.shopCartListDt.length;i++){
-                  num+=responseData.data.shopCartListDt[i].count
+                  if(responseData.data.shopCartListDt[i].goodId>0){
+                    num+=responseData.data.shopCartListDt[i].count
+                  }else{
+                    this.setState({shippingFee: responseData.data.shopCartListDt[i]})
+                    responseData.data.shopCartListDt.splice(i,1)
+                  }
                 }
-                this.setState({dataSource:ds.cloneWithRows(responseData.data.shopCartListDt),allCount:num,totalAmount:responseData.data.totalAmount,freight:responseData.data.shippingFee,address: responseData.data.address,totalCardPayment:responseData.data.totalCardPayment,enterpriseAccountPayment:responseData.data.enterpriseAccountPayment})
+                this.setState({dataSource:ds.cloneWithRows(responseData.data.shopCartListDt),allCount:num,totalAmount:responseData.data.totalAmount,freight:responseData.data.shippingFee,address: responseData.data.address,totalCardPayment:responseData.data.totalCardPayment,enterpriseAccountPayment:responseData.data.enterpriseAccountPayment,payAmount:responseData.data.payAmount})
               }
         },(error)=>{
             Alert.alert(error+'')    
@@ -126,25 +131,33 @@ class Store extends Component{
       }
     }
     render(){
-      const { navigate } = this.props.navigation;
+      const { navigate,goBack } = this.props.navigation;
         return(
           <View>
+             <ImageBackground style={styles.header} source={require('../images/headerBg.jpg')}>
+                <TouchableOpacity style={{height:'100%',justifyContent:"center",position:'absolute',
+      left: pxToDp(36),top: pxToDp(36)}} onPress={() => goBack()}>
+                  <Image style={styles.headerBack} source={require('../images/back1.png')}></Image>
+                </TouchableOpacity>
+                <Text style={styles.headerText}>确认订单</Text>
+              </ImageBackground>
             <ScrollView style={styles.scroll}>
                {this.address(navigate)}
                <ListView
                   dataSource={this.state.dataSource}
                   contentContainerStyle={styles.listWrap}
                   renderRow={(rowData) => 
-                    <View style={styles.list}>
-                      <View style={styles.goods}>
-                        <Image style={styles.goodsImg} source={{uri:global.url+rowData.goodImg}}></Image>
-                      </View>
-                      <View style={styles.goodsDetail}>
-                        <View style={styles.goodsDetailNameWrap}><Text style={styles.goodsDetailName}>{rowData.goodName}</Text></View>
-                        <View style={styles.goodsDetailSpecificationsWrap}><Text style={styles.goodsDetailSpecifications}>规格：</Text><Text style={styles.goodsDetailSpecificationsNum}>{rowData.spec}</Text></View>
-                        <View style={styles.goodsDetailPrice}><Text style={styles.goodsDetailPriceSymbol}>¥</Text><Text style={styles.goodsDetailPriceSymbolNum}>{rowData.price*rowData.count}</Text><Text style={styles.goodsNum}>X{rowData.count}</Text></View>
-                      </View>
-                    </View>
+                        <View style={styles.list}>
+                          <View style={styles.goods}>
+                            <Image style={styles.goodsImg} source={{uri:rowData.goodImg.split('|')[0]}}></Image>
+                          </View>
+                          <View style={styles.goodsDetail}>
+                            <View style={styles.goodsDetailNameWrap}><Text style={styles.goodsDetailName}>{rowData.goodName}</Text></View>
+                            <View style={styles.goodsDetailSpecificationsWrap}><Text style={styles.goodsDetailSpecifications}>规格：</Text><Text style={styles.goodsDetailSpecificationsNum}>{rowData.spec}</Text></View>
+                            <View style={styles.goodsDetailPrice}><Text style={styles.goodsDetailPriceSymbol}>¥</Text><Text style={styles.goodsDetailPriceSymbolNum}>{rowData.price*rowData.count}</Text><Text style={styles.goodsNum}>X{rowData.count}</Text></View>
+                          </View>
+                        </View>
+                      
                   }
                 />
                 <View style={styles.remarksWrap}>
@@ -161,7 +174,7 @@ class Store extends Component{
                   this.setState({modelVistibal:true})
                 }} style={styles.paymentMethodWrap1}>
                    <Text style={styles.paymentMethodText1}>支付方式</Text>
-                   <View style={styles.paymentMethod1Wrap}><Text style={styles.paymentMethod1}>{this.state.payName}</Text></View>
+                   <View style={styles.paymentMethod1Wrap}><Text style={styles.paymentMethod1}>微信支付</Text></View>
                    <Image style={styles.select} source={require('../images/select.png')}></Image>
                 </TouchableOpacity>
                 <View style={styles.totleDetail}>
@@ -188,7 +201,7 @@ class Store extends Component{
                     <Text style={[styles.totalTitleSame,styles.orderTotleTitle]}>订单总金额</Text>
                     <View style={styles.orderTotlePrice}>
                       <Text style={[styles.orderTotleSymble,styles.totalSymbleSame]}>¥</Text>
-                      <Text style={styles.orderTotlePrcie}>{this.state.totalAmount}</Text>
+                      <Text style={styles.orderTotlePrcie}>{this.state.totalAmount?this.state.totalAmount+this.state.freight:0}</Text>
                     </View>
                   </View>
                   <View style={[styles.cardPayment,styles.totleSame]}>
@@ -196,29 +209,35 @@ class Store extends Component{
                     <View style={styles.cardPaymentPriceWrap}>
                       <Text style={styles.cardPaymentPricePeduce}>-</Text>
                       <Text style={[styles.cardPaymentPriceSymble,styles.totalSymbleSame]}>¥</Text>
-                      <Text style={styles.cardPaymentPrice}>0.00</Text>
-                      <Image style={styles.cardPaymentRight} source={require('../images/right.png')}></Image>
+                      <Text style={styles.cardPaymentPrice}>{this.state.totalCardPayment}</Text>
+                      {/* <Image style={styles.cardPaymentRight} source={require('../images/right.png')}></Image> */}
                     </View>
                   </View>
+                  {this.state.enterpriseAccountPayment>0?
                   <View style={[styles.distributionFeeWrap,styles.totleSame]}>
                     <Text style={[styles.totalTitleSame,styles.distributionFeeTitle]}>企业账户支付</Text>
                     <View style={styles.distributionFee}>
-                      <Text style={styles.distributionFeeAdd}>+</Text>
+                      <Text style={styles.distributionFeeAdd}>-</Text>
                       <Text style={[styles.distributionFeeSymble,styles.totalSymbleSame]}>¥</Text>
                       <Text style={styles.distributionFeePrice}>{this.state.enterpriseAccountPayment}</Text>
                     </View>
                   </View>
+                  :null
+                }
                 </View>
               </ScrollView>
               <View style={styles.submit1}>
                 <Text style={styles.submitTitle}>实付金额：</Text>
                 <Text style={styles.submitSymble}>¥</Text>
-                <Text style={styles.submitPrice}>{this.state.totalAmount?this.state.totalAmount+this.state.freight:''}</Text>
+                <Text style={styles.submitPrice}>{this.state.payAmount}</Text>
                 <TouchableOpacity style={styles.submitBtn1} onPress={()=>{
                     const { navigate } = this.props.navigation;
+                    let arr= this.state.dataSource._dataBlob.s1.slice()
+                    arr.push(this.state.shippingFee)
+                    console.log(arr)
                     let params={
                       isApp: true,
-                      cartProducts: this.state.dataSource._dataBlob.s1,
+                      cartProducts: arr,
                       customerAddressId: global.addressId,
                       customerCouponId: '',
                       defaultDeliveryType: 0,
@@ -231,8 +250,13 @@ class Store extends Component{
                     }
                     fetch(global.url+'/API/Order/Add','post',params,async (responseData)=>{
                       // Alert.alert(JSON.stringify(responseData))
+                      console.log(responseData)
                       if(!responseData.success){
                          Alert.alert(responseData.message)
+                      }
+                      if(responseData.data.wxAmount==0){
+                        navigate('PaymentSuccess',{payAmount:responseData.data.wxAmount})
+                        return
                       }
                       const result = await WeChat.pay(
                         {
@@ -245,7 +269,7 @@ class Store extends Component{
                         }
                       );
                         if(result.errCode==0){
-                          navigate('PaymentSuccess')
+                          navigate('PaymentSuccess',{payAmount:responseData.data.wxAmount})
                         }else if(result.errCode==-1){
                             Alert.alert('签名错误、未注册APPID、项目设置APPID不正确、注册的APPID与设置的不匹配、其他异常等。')
                         }else if(result.errCode==-2){
@@ -267,7 +291,7 @@ class Store extends Component{
                 </TouchableOpacity>
               </View>
               <Modal
-                animationType={"slide"}
+                animationType={"none"}
                 transparent={true}
                 visible={this.state.modelVistibal}
                 onRequestClose={() => {alert("Modal has been closed.")}}
@@ -283,7 +307,7 @@ class Store extends Component{
                     </TouchableOpacity>
                   </View>
                   <View>
-                    <TouchableOpacity style={styles.Alipay} onPress={()=>{
+                    {/* <TouchableOpacity style={styles.Alipay} onPress={()=>{
                       this.setState({payNum:1})
                     }}>
                       <Image style={styles.AlipayImg} source={require('../images/Alipay.png')}></Image>
@@ -291,7 +315,7 @@ class Store extends Component{
                       <View style={this.state.payNum==1?styles.determineActive:styles.determine}>
                         <Image style={styles.determineImg} source={require('../images/determine.png')}></Image>
                       </View>
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
                     <TouchableOpacity style={styles.wechat}  onPress={()=>{
                       this.setState({payNum:2})
                     }}>
@@ -302,7 +326,7 @@ class Store extends Component{
                       </View>
                     </TouchableOpacity>
                     <View style={styles.submit}><Text style={styles.submitBtn} onPress={()=>{
-                      let pays=['支付宝','微信支付']
+                      let pays=['微信支付']
                       this.setState({payName:pays[this.state.payNum-1],modelVistibal:false})
                     }}>确认</Text></View>
                   </View> 
@@ -316,23 +340,24 @@ class Store extends Component{
 const styles = StyleSheet.create({
     header: {
       backgroundColor: 'white',
-      height: pxToDp(96),
+      height: pxToDp(130),
+      paddingTop: pxToDp(40),
       flexDirection: 'row',
       alignItems: "center",
+      justifyContent: 'center',
+      position:'relative',
       borderBottomWidth: pxToDp(1),
       borderBottomColor:'#daddde'
     },
     headerBack: {
-      marginLeft: pxToDp(26),
-      marginRight: pxToDp(26),
-      width: pxToDp(23),
-      height: pxToDp(40),
+      width: pxToDp(34),
+      height: pxToDp(34),
     },
     headerText: {
-      borderLeftWidth: pxToDp(1),
-      borderLeftColor: '#daddde',
       paddingLeft: pxToDp(24),
-      fontSize: pxToDp(36)
+      fontSize: pxToDp(36),
+      backgroundColor: 'rgba(0,0,0,0)',
+      color: 'white'
     },
     userDetail: {
       borderTopWidth: pxToDp(1),
@@ -579,7 +604,6 @@ const styles = StyleSheet.create({
     distributionFeePrice: {
       fontSize: pxToDp(32),
       color: '#ff3f00',
-      marginLeft: pxToDp(10)
     },
     orderTotlePrice: {
       position: 'absolute',

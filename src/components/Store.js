@@ -208,11 +208,11 @@ class Store extends Component{
                 )
     }
     render(){
-      const { navigate } = this.props.navigation;
+      const { navigate,goBack } = this.props.navigation;
         return(
           <View style={{}}>
             <View style={styles.search}>
-                <TouchableOpacity style={{height:'100%',justifyContent:"center"}} onPress={() => navigate('Home')}>
+                <TouchableOpacity style={{height:'100%',justifyContent:"center"}} onPress={() => goBack()}>
                   <Image style={styles.searchBack} source={require('../images/back.png')}></Image>
                 </TouchableOpacity>
                 <TextInput

@@ -37,9 +37,9 @@ class Index extends Component{
         // }) 
     }
     handleMessage(evt: any) {
-      global.addressId=evt.nativeEvent.data.addressId
-      const { navigate } = this.props.navigation;
-      navigate('Order',evt.nativeEvent.data)
+      // global.addressId=evt.nativeEvent.data.addressId
+      // const { navigate } = this.props.navigation;
+      // navigate('Order',evt.nativeEvent.data)
     }
     render(){
         const { navigate } = this.props.navigation;
@@ -73,11 +73,7 @@ class Index extends Component{
             //   />
             // </ScrollView>
             <WebView
-                style={{
-                backgroundColor: "#e5e5e5",
-                height: 100,
-                }}
-                source={{uri:global.url+'/web/paymentDelivery.html',headers:{
+                source={{uri:global.url+'/web/my/offlineOrder.html',headers:{
                   'User-Agent': 'TDJAPP',
                   'Accept': 'application/json',
                   "Content-Type": "application/json",

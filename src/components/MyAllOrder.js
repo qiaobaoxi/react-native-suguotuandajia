@@ -34,13 +34,14 @@ class Index extends Component{
             if(!cookie||!cookie.userId){
                 navigate("Login")
             }else{
-                Cookie.set(global.url+'/web/myOrder.html?type=', 'userOpenId', cookie.userId).then(() => console.log('success'));
+                Cookie.set(global.url+'/web/myOrder.html?type=', 'userId', cookie.userId).then(() => console.log('success'));
             }
         })
         const { params} = this.props.navigation.state;
         let num=''
         if(params){
            num=params.num
+        //    Alert.alert(''+num)
         }
         return(
             <WebView
@@ -48,7 +49,13 @@ class Index extends Component{
                 backgroundColor: "#e5e5e5",
                 height: 100,
                 }}
-                source={{uri:global.url+'/web/myOrder.html?type='+num}}
+                source={{uri:global.url+'/web/myOrder.html?type='+num,headers:{
+                    'User-Agent': 'TDJAPP',
+                    'Accept': 'application/json',
+                    "Content-Type": "application/json",
+                  }}
+                }
+                userAgent="TDJAPP"
                 onMessage={this.handleMessage(navigate)}  
             />
         );

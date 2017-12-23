@@ -45,6 +45,7 @@ class Store extends Component{
     }
     render(){
       const { navigate } = this.props.navigation;
+      const { params } = this.props.navigation.state;
         return(
           <View>
             <View style={styles.header}>
@@ -56,10 +57,10 @@ class Store extends Component{
             <View style={styles.body}>
               <Image style={styles.paymentSuccessImg} source={require('../images/paymentSuccess.png')}></Image>
               <Text style={styles.paymentSuccessTitle}>支付成功</Text>
-              <Text style={styles.paymentSuccessPrice}>¥200.00</Text>
+              <Text style={styles.paymentSuccessPrice}>¥{params.payAmount.toFixed(2)}</Text>
               <View style={styles.paymentSuccessBtn}>
-                <View style={styles.paymentSuccessBtn1}><Text style={styles.paymentSuccessSeeOrder}>查看订单</Text></View>
-                <View style={styles.paymentSuccessBtn2}><Text style={styles.paymentSuccessBackHome}>返回首页</Text></View>
+                <TouchableOpacity style={styles.paymentSuccessBtn1} onPress={()=>navigate("MyAllOrder",{num:1})}><Text style={styles.paymentSuccessSeeOrder}>查看订单</Text></TouchableOpacity>
+                <TouchableOpacity style={styles.paymentSuccessBtn2} onPress={()=>navigate("Home")}><Text style={styles.paymentSuccessBackHome}>继续逛逛</Text></TouchableOpacity>
               </View>
             </View>
           </View> 

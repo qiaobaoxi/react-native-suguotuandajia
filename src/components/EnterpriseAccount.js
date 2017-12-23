@@ -12,6 +12,7 @@ import {
   Alert
 } from 'react-native';
 const deviceWidthDp = Dimensions.get('window').width;
+import CookieManager from 'react-native-cookies';
 import Cookie from 'react-native-cookie';
 const uiWidthPx = 750;
 
@@ -22,32 +23,32 @@ class Index extends Component{
     constructor(props) {
         super(props);
         console.disableYellowBox = true;
+        
     }
     handleMessage(navigate,e) {
-        // Alert.alert(e)
-        // if(e){
-        //   navigate('Home')
-        // }
+        //   navigate('OrderDetail')
     }
     render(){
-        const { navigate} = this.props.navigation;
+        const { navigate } = this.props.navigation;
         Cookie.get(global.url).then((cookie) => {
             if(!cookie||!cookie.userId){
                 navigate("Login")
             }else{
-                Cookie.set(global.url+'/web/myCard.html', 'userId', cookie.userId).then(() => console.log('success'));
+                Cookie.set(global.url+'/web/my/enterpriseAccount.htmltype=', 'userId', cookie.userId).then(() => console.log('success'));
             }
         })
-        
+        const { params} = this.props.navigation.state;
+        let num=''
+        if(params){
+           num=params.num
+        }
         return(
             <WebView
-                      style={{
-                        backgroundColor: "#e5e5e5",
-                        height: 100,
-                      }}
-                      source={
-                        {uri:global.url+'/web/myCard.html'}
-                 }
+                style={{
+                backgroundColor: "#e5e5e5",
+                height: 100,
+                }}
+                source={{uri:global.url+'/web/my/enterpriseAccount.html?type='+num}}
                 onMessage={this.handleMessage(navigate)}  
             />
         );

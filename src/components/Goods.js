@@ -54,15 +54,19 @@ class Goods extends Component{
         if (typeof params != 'object') {
             return
         }
-        
-        let params1 = {addressLabel:"00060001",categoryId:71,keyword:"",loadAll:false,pageIndex:0}
+        let keyword=''
+        if(params&&!!params.goodname){
+          keyword=params.goodname
+        }
+        let params1 = {addressLabel:"00060001",categoryId:71,keyword:keyword,loadAll:false,pageIndex:0}
         this.state={dataSource:[],modalVisible: false,
           num: 1,
           url,params1,
           goods : [
           ],
           isLoad:false,
-          getNum:params.getNum
+          getNum:params.getNum,
+          goodname:''
         }
         this.getGoodsList()
     }
@@ -85,26 +89,21 @@ class Goods extends Component{
             specsId = good.specs[0].id
           } 
           let num=0
-          if(this.state.alrGoods){
-            for(let i=0;i<this.state.alrGoods.length;i++){
-              if(good.id==this.state.alrGoods[i].id){
-                num=this.state.alrGoods[i]
-              }
-            }
-          }
-          
+          console.log(good.goodImg.split('|'))
           this.state.goods.push({id: good.id,
-            img: good.goodImg,
+            img: good.goodImg.split('|')[0],
             name: good.goodName,
             price: good.price,
             specs: specs,
             specsId: specsId,
             num: num})
         }
+        console.log(this.state.goods,responseData)
         this.setState({dataSource:this.state.goods,isLoad:false,isNextSuccess:1});
         clearTimeout(this.state.timer)
       })
       Cookie.get(global.url).then((cookie) => {
+        setTimeout(()=>{
         if(cookie&&!!cookie.userId){
           fetch(global.url+'/API/MyCart/getShopCartList','post','',(responseData)=>{
             if(responseData.success){
@@ -114,10 +113,19 @@ class Goods extends Component{
               for(let i = 0;i < responseData.data.shopCartListDt.length;i++){
                 totalPrice += responseData.data.shopCartListDt[i].price*responseData.data.shopCartListDt[i].count
                 cartNum += responseData.data.shopCartListDt[i].count
-                global.goods.push({goodSpecId:responseData.data.shopCartListDt[i].goodSpecId,count:responseData.data.shopCartListDt[i].count})
+                global.goods.push({goodSpecId:responseData.data.shopCartListDt[i].goodSpecId,count:responseData.data.shopCartListDt[i].count,goodId:responseData.data.shopCartListDt[i].goodId})
+              }
+              for(let i=0;i<this.state.goods.length;i++){
+                for(j=0;j<global.goods.length;j++){
+                  if(this.state.goods[i].id==global.goods[j].goodId){
+                    this.state.goods[i].num=1
+                    this.setState({dataSource:this.state.goods})
+                  }
+                }
               }
               totalPrice = totalPrice.toFixed(2)
               this.setState({cartNum,totalPrice});
+              console.log(global.goods)
             }else{
               Alert.alert(JSON.stringify(global.storageGoods))
             }
@@ -141,6 +149,16 @@ class Goods extends Component{
             let data=ret
             let num=0
             let totalPrice=0
+            setTimeout(()=>{
+              for(let i=0;i<this.state.goods.length;i++){
+                for(j=0;j<data.length;j++){
+                  if(this.state.goods[i].id==data[j].id){
+                    this.state.goods[i].num=1
+                    this.setState({dataSource:this.state.goods})
+                  }
+                }
+              }
+            },500)
             for(let i=0;i<data.length;i++){
               num+=Number(data[i].count)
               let price=data[i].count*data[i].price
@@ -160,6 +178,7 @@ class Goods extends Component{
             }
           })
         }
+      },500)
       });
       
     }
@@ -181,7 +200,7 @@ class Goods extends Component{
                                 let params={
                                   id: good.id,
                                   count: 1,
-                                  goodImg: good.img,
+                                  img: good.img,
                                   goodName: good.name,
                                   goodspecifications: good.specsId,
                                   price: good.price
@@ -196,7 +215,10 @@ class Goods extends Component{
                                     this.state.dataSource[i].num++ 
                                     this.state.getNum()
                                   }else{
-                                    
+                                    console.log(this.state.dataSource[index])
+                                    // Alert.alert(JSON.stringify(this.state.dataSource[index]))
+                                    this.state.dataSource[index].num=1
+                                    this.setState({dataSource:this.state.dataSource})
                                     global.storage.load({
                                       key: 'goods',
                                       // syncInBackground(默认为true)意味着如果数据过期，
@@ -221,6 +243,7 @@ class Goods extends Component{
                                       }
                                       if(index>=0){
                                         ret[index].count++
+                                        ret[index].img=params.img
                                         data=ret
                                       }else{
                                         data=ret
@@ -233,6 +256,7 @@ class Goods extends Component{
                                         let price=data[i].count*data[i].price
                                         totalPrice+=price
                                       }
+                                      console.log(data,params)
                                       totalPrice=totalPrice.toFixed(2)
                                       this.setState({totalPrice: totalPrice,cartNum: num})
                                       global.storage.save({
@@ -290,24 +314,76 @@ class Goods extends Component{
               this.getGoodsList()
           },1000)
       }
-      
-    
      }
+     _onPressSearch(){
+      this.state.params1.keyword=this.state.goodname
+      this.state.params1.pageIndex=0
+      this.setState({params1:this.state.params1,goods:[]})
+      fetch(this.state.url,'post',this.state.params1,(responseData)=>{
+        if(responseData.data.goods.length==0){
+          this.setState({isLoad:false})
+          return
+        }
+        for(var i=0;i<responseData.data.goods.length;i++){
+          var good=responseData.data.goods[i]
+          let specs=''
+          if (good.specs.length>1) {
+              specs = '多规格'
+          } else {
+              specs = good.specs[0].spec
+          }
+          let specsId = ''
+          if (good.specs.length==1) {
+            specsId = good.specs[0].id
+          } 
+          let num=0
+          if(this.state.alrGoods){
+            for(let i=0;i<this.state.alrGoods.length;i++){
+              if(good.id==this.state.alrGoods[i].id){
+                num=this.state.alrGoods[i]
+              }
+            }
+          }
+          this.state.goods.push({id: good.id,
+            img: good.goodImg.split('|')[0],
+            name: good.goodName,
+            price: good.price,
+            specs: specs,
+            specsId: specsId,
+            num: num})
+        }
+        console.log(this.state.goods,responseData)
+        this.setState({dataSource:this.state.goods,isLoad:false,isNextSuccess:1});
+      })
+     }
+     
     render(){
       const { navigate,goBack } = this.props.navigation;
         return(
-            <View>
+            <View style={{height: '100%'}}>
               <ImageBackground style={styles.search} source={require('../images/headerBg.jpg')}>
                 <TouchableOpacity style={{height:'100%',justifyContent:"center"}} onPress={() => navigate('Home')}>
                   <Image style={styles.searchBack} source={require('../images/back1.png')}></Image>
                 </TouchableOpacity>
                 <TextInput
+                    onChangeText={(text) => {
+                      this.setState({goodname:text})
+                    }}
+                    returnKeyType={"search"}
+                    onEndEditing={this._onPressSearch.bind(this)}
                     style={styles.searchInput}
                     underlineColorAndroid={'transparent'}
                     placeholder={'输入关键字直接搜索'}
                     placeholderTextColor={'#a6a6a6'}
                  />
-                 <Image style={styles.searchImg} source={require('../images/search.png')}></Image>
+                {/* <TouchableOpacity onPress={()=>{
+                  this.state.params1.keyword=this.state.goodname
+                  this.setState({params1:this.state.params1})
+                  this.getGoodsList()
+                }}> <Image style={styles.searchImg} source={require('../images/search.png')}></Image></TouchableOpacity> */}
+                <TouchableOpacity  style={{height:'100%',width: pxToDp(50),justifyContent:"center",position: 'relative',zIndex: 100}} onPress={this._onPressSearch.bind(this)}>
+                  <Image style={styles.searchImg} source={require('../images/search.png')}></Image>
+                </TouchableOpacity>
               </ImageBackground>
               {/* <SectionList
                   // stickySectionHeadersEnabled={true}
@@ -331,11 +407,11 @@ class Goods extends Component{
                   onEndReachedThreshold={0}
                   getItemLayout={(data, index) => ( {length: pxToDp(550), offset: pxToDp(550) * index, index} )}
               />
-               <View style={styles.settlementColumn}>
-                  <Image style={styles.shoppingCart} source={require('../images/goodsIncart.png')}></Image>
+               {this.state.dataSource.length!=0?<View style={styles.settlementColumn}>
+                  <TouchableOpacity style={styles.shoppingCartWrap} onPress={() => navigate('Home',{page: 'shoppingCart'})} ><Image style={styles.shoppingCart} source={require('../images/goodsIncart.png')}></Image></TouchableOpacity>
                   <View style={this.state.cartNum<100?styles.badgeWrap:styles.badgeWrap1}><Text style={styles.badge}>{this.state.cartNum?this.state.cartNum:0}</Text></View>
                   <View style={styles.goPayWrap}>
-                    <Text style={styles.goPayTotalPrice}>合计：</Text><Text style={styles.goPayTotalPriceSymbol}>¥</Text><Text style={styles.totalPrice}>{this.state.totalPrice?this.state.totalPrice:0}</Text><TouchableHighlight style={this.state.totalPrice?styles.settlement:styles.settlement1} disabled={this.state.totalPrice?false:true} onPress={() => 
+                    <Text style={styles.goPayTotalPrice}>合计：</Text><Text style={styles.goPayTotalPriceSymbol}>¥</Text><Text style={styles.totalPrice}>{this.state.totalPrice?this.state.totalPrice:0}</Text><TouchableOpacity style={this.state.totalPrice>1?styles.settlement:styles.settlement1} disabled={this.state.totalPrice>1?false:true} onPress={() => 
                       Cookie.get(global.url).then((cookie) => {
                         if(cookie&&!!cookie.userId){
                           navigate('Order')
@@ -343,9 +419,9 @@ class Goods extends Component{
                           navigate('Login')
                          }
                       })
-                      }><Text style={{color: 'white',}}>去结算</Text></TouchableHighlight>
+                      }><Text style={{color: 'white',}}>去结算</Text></TouchableOpacity>
                   </View>
-               </View>
+               </View>:null}
                <Modal
                   animationType={"fade"}
                   transparent={true}
@@ -453,15 +529,14 @@ const styles = StyleSheet.create({
     },
     searchImg: {
       position:'absolute',
-      top: pxToDp(67),
-      right: pxToDp(46),
+      right: pxToDp(70),
       width: pxToDp(34),
       height: pxToDp(34),
     },
     listWrap:{
       // flexDirection:'row',
       // flexWrap:'wrap',
-      paddingBottom: pxToDp(250),
+      paddingBottom: pxToDp(100),
     },
     goods:{
       marginTop: pxToDp(10),
@@ -778,15 +853,17 @@ const styles = StyleSheet.create({
        backgroundColor: 'rgba(0,0,0,0)',
        paddingTop: pxToDp(34),
        position: 'absolute',
-       bottom:69,
+       bottom:0,
        left: 0,
        right: 0,
       //  backgroundColor: 'blue',
     },
-    shoppingCart: {
+    shoppingCartWrap:{
       position: 'absolute',
       left: pxToDp(20),
       zIndex:1000,
+    },
+    shoppingCart: {
       width: pxToDp(120),
       height: pxToDp(120),
     },

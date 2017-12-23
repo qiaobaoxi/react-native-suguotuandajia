@@ -20,15 +20,20 @@ import TabNavigator from 'react-native-tab-navigator';
 import { StackNavigator } from 'react-navigation';
 import SplashScreen from 'react-native-splash-screen'
 import Index from './src/components/Index';
+import About from './src/components/About';
+import EnterpriseAccount from './src/components/EnterpriseAccount';
+import Cart from './src/components/Cart';
 import Addresses from './src/components/Addresses';
 import Qrcode from './src/components/Qrcode';
 import Goods from './src/components/Goods';
 import Person from './src/components/Person';
 import ShoppingCart from './src/components/ShoppingCart';
 import StorePayment from './src/components/StorePayment';
+import OfflineOrder from './src/components/OfflineOrder';
 import Store from './src/components/Store';
 import Order from './src/components/Order';
 import Login from './src/components/Login';
+import GroupArrivesHome from './src/components/GroupArrivesHome';
 import PaymentSuccess from './src/components/PaymentSuccess';
 import MyAllOrder from './src/components/MyAllOrder';
 import MyCardCoupons from './src/components/MyCardCoupons';
@@ -51,7 +56,7 @@ var storage = new Storage({
   storageBackend: AsyncStorage,
     
   // 数据过期时间，默认一整天（1000 * 3600 * 24 毫秒），设为null则永不过期
-  defaultExpires: 1000 * 3600 * 24,
+  defaultExpires: 1000 * 3600 * 300,
     
   // 读写时在内存中缓存数据。默认启用。
   enableCache: true,
@@ -60,6 +65,9 @@ global.storage = storage;
 const deviceWidthDp = Dimensions.get('window').width;
 const uiWidthPx = 750;
 global.url='http://wx.haipibaobao.com'
+// global.storage.remove({
+//   key: 'goods'
+// });
 // CookieManager.clearAll()
 // .then((res) => {
 //   console.log('CookieManager.clearAll =>', res);
@@ -70,12 +78,22 @@ function pxToDp(uiElementPx) {
 class HomeScreen extends Component<{}> {
   componentDidMount() {
       SplashScreen.hide();
+      this.subscription = DeviceEventEmitter.addListener('num', (num)=>{
+           this.setState({num:num})
+      })
   }
   constructor(props) {
     super(props);
     console.disableYellowBox = true;
-    this.state = {
-        selectedTab: 'index'
+    const { params } = this.props.navigation.state;
+    if(!!params&&!!params.page){
+      this.state = {
+        selectedTab: params.page
+      }
+    }else{
+      this.state = {
+          selectedTab: 'index'
+      }
     }
     let num = 0
     // AsyncStorage.getItem('goods',(error,result)=>{
@@ -87,11 +105,53 @@ class HomeScreen extends Component<{}> {
     //       this.setState({num:num})
     //     }
     // })
+    global.storage.load({
+      key: 'Cookie',
+      // syncInBackground(默认为true)意味着如果数据过期，
+      // 在调用sync方法的同时先返回已经过期的数据。
+      // 设置为false的话，则等待sync方法提供的最新数据(当然会需要更多时间)。
+      syncInBackground: true,
+      
+      // 你还可以给sync方法传递额外的参数
+      syncParams: {
+      extraFetchOptions: {
+      // 各种参数
+      },
+    someFlag: true,
+      },
+    }).then(ret => {
+      let parems={
+        userId:ret
+      }
+      Cookie.set(global.url, 'userId', ret).then(() => console.log('success'));
+        fetch(global.url+'/api/User/ReLogin','post',parems,(responseData)=>{
+          Alert.alert(0)
+          Cookie.get(global.url).then((cookie) => {
+            global.storage.save({
+              key: 'Cookie',  // 注意:请不要在key中使用_下划线符号!
+              data: cookie
+            });
+        });
+      },(error)=>{
+        Alert.alert('2')
+         console.log(error)
+      })
+    }).catch(err => {
+      console.warn(err.message);
+      switch (err.name) {
+          case 'NotFoundError':
+              // TODO;
+              break;
+            case 'ExpiredError':
+                // TODO
+                break;
+      }
+    })
     Cookie.get(global.url).then((cookie) => {
-      if(cookie&&!!cookie.userId){
+      if(!!cookie&&!!cookie.userId){
         fetch(global.url+'/api/home/getInitData','GET','',(responseData)=>{
           this.setState({num:responseData.cartNum})
-      })
+        })
       }else{
         global.storage.load({
           key: 'goods',
@@ -146,12 +206,22 @@ class HomeScreen extends Component<{}> {
               </TabNavigator.Item>
               <TabNavigator.Item
                   selected={this.state.selectedTab === 'payment'}
-                  title="门店付款码"
+                  title="门店付款"
                   titleStyle={{color:'#999',fontSize:pxToDp(20)}}
                   selectedTitleStyle={{color:'#999'}}
                   renderIcon={() => <Image style={styles.menuImg2} source={require('./src/images/payCode-1.png')} />}
                   renderSelectedIcon={() => <Image style={styles.menuImg2} source={require('./src/images/payCode.png')} />}
-                  onPress={() => this.setState({ selectedTab: 'payment' })}>
+                  onPress={() => {
+                    const navigation=this.props.navigation
+                    Cookie.get(global.url).then((cookie) => {
+                      if(!cookie||!cookie.userId){
+                        navigation.navigate("Login")
+                      }else{
+                        this.setState({ selectedTab: 'payment' })}
+                      }
+                     )
+                  }}>
+                  
                   <StorePayment navigation={this.props.navigation} />
               </TabNavigator.Item>
               <TabNavigator.Item
@@ -195,10 +265,7 @@ class MyAllOrderScreen extends React.Component {
 }
 class QRcodeScreen extends React.Component {
   static navigationOptions = {
-    title: '请扫描二维码',
-    headerTintColor: 'white',
-    headerStyle: {backgroundColor:'#393a3f'},
-    headerBackTitle:null
+    header: null
   };
   render() {
     return (
@@ -206,7 +273,58 @@ class QRcodeScreen extends React.Component {
     );
   }
 }
-
+class OfflineOrderScreen extends React.Component {
+  static navigationOptions = {
+    title: '线下订单列表',
+    headerTintColor: 'white',
+    headerStyle: {backgroundColor:'#393a3f'},
+    headerBackTitle:null
+  };
+  render() {
+    return (
+      <OfflineOrder navigation={this.props.navigation} />
+    );
+  }
+}
+class EnterpriseAccountScreen extends React.Component {
+  static navigationOptions = {
+    title: '企业账户',
+    headerTintColor: 'white',
+    headerStyle: {backgroundColor:'#393a3f'},
+    headerBackTitle:null
+  };
+  render() {
+    return (
+      <EnterpriseAccount navigation={this.props.navigation} />
+    );
+  }
+}
+class AboutScreen extends React.Component {
+  static navigationOptions = {
+    title: 'about:blank',
+    headerTintColor: 'white',
+    headerStyle: {backgroundColor:'#393a3f'},
+    headerBackTitle:null
+  };
+  render() {
+    return (
+      <About navigation={this.props.navigation} />
+    );
+  }
+}
+class CartScreen extends React.Component {
+  static navigationOptions = {
+    title: '扫码绑卡',
+    headerTintColor: 'white',
+    headerStyle: {backgroundColor:'#393a3f'},
+    headerBackTitle:null
+  };
+  render() {
+    return (
+      <Cart navigation={this.props.navigation} />
+    );
+  }
+}
 class AddressScreen extends React.Component {
   static navigationOptions = {
     headerTintColor: 'black',
@@ -252,11 +370,7 @@ class StoreScreen extends React.Component {
 }
 class OrderScreen extends React.Component {
   static navigationOptions = {
-    headerTitle: '确认订单',
-    headerTintColor: 'black',
-    headerStyle: {backgroundColor:'white',height: pxToDp(113),},
-    headerTitleStyle: { fontSize: pxToDp(36),fontWeight:'normal'},
-    headerBackTitle:null,
+    header:null
   };
   render() {
     return (
@@ -276,7 +390,7 @@ class PaymentSuccessScreen extends React.Component {
 }
 class MyAllOrderSuccessScreen extends React.Component {
   static navigationOptions = {
-    headerTitle: '订单',
+    headerTitle: '线上订单列表',
     headerStyle: {backgroundColor:'white'},
     headerBackTitle:null,
   };
@@ -286,9 +400,21 @@ class MyAllOrderSuccessScreen extends React.Component {
     );
   }
 }
+class GroupArrivesHomeSuccessScreen extends React.Component {
+  static navigationOptions = {
+    headerTitle: '企业采购',
+    headerStyle: {backgroundColor:'white'},
+    headerBackTitle:null,
+  };
+  render() {
+    return (
+      <GroupArrivesHome navigation={this.props.navigation} />
+    );
+  }
+}
 class MyCardCouponsSuccessScreen extends React.Component {
   static navigationOptions = {
-    headerTitle: '我的卡',
+    headerTitle: '我的卡券',
     headerStyle: {backgroundColor:'white'},
     headerBackTitle:null,
   };
@@ -470,18 +596,24 @@ const styles = StyleSheet.create({
 });
 const RootNavigator = StackNavigator({
   // Login: { screen: LoginScreen },
-  // PaymentSuccess:{
-  //   screen: PaymentSuccessScreen,
-  // },
   Home: {
     screen: HomeScreen,
+  },
+  About: {
+    screen: AboutScreen,
   },
   Order: {
     screen: OrderScreen,
   },
+  PaymentSuccess:{
+    screen: PaymentSuccessScreen,
+  },
   Login: { screen: LoginScreen },
+  Cart: { screen: CartScreen },
+  GroupArrivesHome: { screen: GroupArrivesHomeSuccessScreen },
   Store: { screen: StoreScreen },
   Goods: { screen: GoodsScreen },
+  OfflineOrder: { screen: OfflineOrderScreen },
   QRcode: { screen: QRcodeScreen },
   Address: { screen: AddressScreen},
   MyAllOrder: { screen: MyAllOrderSuccessScreen },
@@ -491,6 +623,7 @@ const RootNavigator = StackNavigator({
   MyCoupon: { screen: MyCouponSuccessScreen },
   MyInfo: { screen: MyInfoSuccessScreen },
   AddressManage: { screen: AddressManageSuccessScreen },
+  EnterpriseAccount: { screen: EnterpriseAccountScreen },
 });
 export default class App extends React.Component {
   render() {

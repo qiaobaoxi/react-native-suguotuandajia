@@ -17,6 +17,7 @@ import {
   StatusBar
 } from 'react-native';
 import fetch from '../js/fetch'
+import Cookie from 'react-native-cookie';
 const deviceWidthDp = Dimensions.get('window').width;
 
 const uiWidthPx = 750;
@@ -27,7 +28,7 @@ function pxToDp(uiElementPx) {
 class Login extends Component{
     constructor(props) {
         super(props);
-        this.state={tel: '',code: '',disabled:true,codeDisabled:true,getCodeText:'获取动态密码'}
+        this.state={tel: '',code: '',disabled:true,codeDisabled:true,getCodeText:'获取验证码'}
     }
     submit(){
         const { navigate } = this.props.navigation;
@@ -36,6 +37,7 @@ class Login extends Component{
             smsCode: this.state.code
         }
         fetch(global.url+'/api/user/UserLogin','post',params,(responseData)=>{
+            
             if(responseData.result){
                 global.storage.load({
                     key: 'goods',
@@ -73,12 +75,18 @@ class Login extends Component{
                               break;
                     }
                   })
-                navigate('Home')
+                  Cookie.get(global.url).then((cookie) => {
+                    global.storage.save({
+                      key: 'Cookie',  // 注意:请不要在key中使用_下划线符号!
+                      data: cookie.userId
+                    });
+                  });
+                  navigate('Home')
             }else{
                 Alert.alert(responseData.errMsg)
             }
         },(error)=>{
-          console.log(responseData)
+          console.log(error)
         })
     }
     isDisabled(){
@@ -119,14 +127,13 @@ class Login extends Component{
                           this.setState({code:text},()=>{
                             this.isDisabled()
                           })
-                          }} style={styles.codeInput} underlineColorAndroid={'transparent'} placeholder={'邀请码'} placeholderTextColor={'#a2a2a2'}/>
+                          }} style={styles.codeInput} underlineColorAndroid={'transparent'} placeholder={'验证码'} placeholderTextColor={'#a2a2a2'}/>
                       <TouchableOpacity style={styles.button} onPress={()=>{
                           let num=60
                           let params = {
                             "mobileNo": this.state.tel,
                           }
                           fetch(global.url+'/api/user/GetSMScode','post',params,(responseData)=>{
-                              Alert.alert(JSON.stringify(responseData))
                               if(!responseData.result){
                                 Alert.alert(errMsg)
                               }
@@ -139,7 +146,7 @@ class Login extends Component{
                              if(num==0){
                                 
                                 clearInterval(timer)
-                                this.setState({getCodeText:'获取动态密码',codeDisabled: false})
+                                this.setState({getCodeText:'获取验证码',codeDisabled: false})
                              }
                           },1000)
                       }} disabled={this.state.codeDisabled}><Text style={styles.buttonText}>{this.state.getCodeText}</Text></TouchableOpacity>

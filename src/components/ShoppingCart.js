@@ -31,7 +31,6 @@ import Cookie from 'react-native-cookie';
 import fetch from '../js/fetch'
 const deviceWidthDp = Dimensions.get('window').width;
 
-
 const uiWidthPx = 750;
 function pxToDp(uiElementPx) {
   return uiElementPx *  deviceWidthDp / uiWidthPx;
@@ -49,6 +48,7 @@ class Goods extends Component{
             fetch(global.url+'/API/MyCart/getShopCartList','post','',(responseData)=>{
               let goods =[]
               let res=responseData.data.shopCartListDt
+              console.log()
               let isSelectedAll=false
               let num=0
               for( let i = 0; i < res.length; i++){
@@ -59,7 +59,7 @@ class Goods extends Component{
                     }
                      goods.push({
                       id: res[i].id,
-                      img: res[i].goodImg,
+                      img: res[i].goodImg.split('|')[0],
                       name: res[i].goodName,
                       num: res[i].count,
                       selected: selected,
@@ -92,11 +92,15 @@ class Goods extends Component{
             someFlag: true,
               },
             }).then(ret => {
+              console.log(ret)
               let goods =[]
               for( let i = 0; i < ret.length; i++){
+                console.log(
+                  ret
+                )
                  goods.push({
                   id: ret[i].id,
-                  img: ret[i].goodImg,
+                  img: ret[i].img,
                   name: ret[i].goodName,
                   num: ret[i].count,
                   selected: true,
@@ -179,6 +183,7 @@ class Goods extends Component{
                   <View style={styles.listItem}>
                     <TouchableOpacity style={styles.listItemSelectedWrap} onPress={
                             ()=>{ 
+                              
                                   this.state.dataSource._dataBlob.s1[selected].selected=!this.state.dataSource._dataBlob.s1[selected].selected
                                   let newDataSource = JSON.parse(JSON.stringify(this.state.dataSource._dataBlob.s1))
                                   this.setState({dataSource: this.state.dataSource.cloneWithRows(newDataSource)})
@@ -199,7 +204,7 @@ class Goods extends Component{
                                       if(!this.state.dataSource._dataBlob.s1[i].selected){
                                          num++
                                       }
-                                    }
+                                  }
                                   if(num===0){
                                      this.state.isSelectedAll=true
                                   }else{
@@ -212,7 +217,7 @@ class Goods extends Component{
                        </View> 
                     </TouchableOpacity> 
                     <View style={styles.listGoodWrap}>
-                      <Image style={styles.listGood} source={{uri:global.url+rowData.img}}></Image>
+                      <Image style={styles.listGood} source={{uri:rowData.img}}></Image>
                     </View>
                     <View style={styles.listGoodDetails}>
                       <View>
@@ -226,22 +231,86 @@ class Goods extends Component{
                         <View style={styles.listGoodDetailsFunction}>
                           <TouchableOpacity style={styles.listGoodDetailsFunctionMinusSign} onPress={
                             ()=>{
-                               if(this.state.dataSource._dataBlob.s1[selected].num > 1){
-                                  let params={
-                                    id:this.state.dataSource._dataBlob.s1[selected].id
-                                  }
-                                  fetch(global.url+'/API/MyCart/reduce','post',params,(responseData)=>{
-                                         if(responseData.success){
+                                Cookie.get(global.url).then((cookie) => {
+                                  if(!cookie||!cookie.userId){
+                                    let params={
+                                      id:this.state.dataSource._dataBlob.s1[selected].id
+                                    }
+                                    this.state.dataSource._dataBlob.s1[selected].num--
+                                    if(this.state.dataSource._dataBlob.s1[selected].num==0){
+                                      this.state.dataSource._dataBlob.s1.splice(selected,1)
+                                    }
+                                    let newDataSource = JSON.parse(JSON.stringify(this.state.dataSource._dataBlob.s1))
+                                    this.setState({dataSource: this.state.dataSource.cloneWithRows(newDataSource)})
+                                    let num=this.goodsTotalNum(this.state.dataSource._dataBlob.s1)
+                                    DeviceEventEmitter.emit('num', num)
+                                    for(let i=0;i<newDataSource.length;i++){
+                                      newDataSource[i].count=num
+                                    }
+                                    global.storage.save({
+                                      key: 'goods',  // 注意:请不要在key中使用_下划线符号!
+                                      data: newDataSource
+                                    });
+                                    this.total()
+                                  }else{
+                                    let params={
+                                      id:this.state.dataSource._dataBlob.s1[selected].id
+                                    }
+                                    fetch(global.url+'/API/MyCart/reduce','post',params,(responseData)=>{
+                                           console.log(responseData)
+                                           if(responseData.success){
                                               this.state.dataSource._dataBlob.s1[selected].num--
                                               let num=this.goodsTotalNum(this.state.dataSource._dataBlob.s1)
                                               DeviceEventEmitter.emit('num', num)
+                                              if(this.state.dataSource._dataBlob.s1[selected].num==0){
+                                                this.state.dataSource._dataBlob.s1.splice(selected,1)
+                                              }
                                               let newDataSource = JSON.parse(JSON.stringify(this.state.dataSource._dataBlob.s1))
                                               this.setState({dataSource: this.state.dataSource.cloneWithRows(newDataSource)})
                                               this.total()
-                                         }
-                                  })
+                                           }
+                                    })
+                                  }
+                                }
+                                 )
                                   
-                               }
+                              //  }else{
+                              //      let params={
+                              //         id:this.state.dataSource._dataBlob.s1[selected].id,
+                              //         isDeleted:1
+                              //       }
+                              //       fetch(global.url+'/API/MyCart/getShopCartList','post',params,(responseData)=>{
+                              //         console.log(responseData)
+                              //         let goods =[]
+                              //         let res=responseData.data.shopCartListDt
+                              //         let isSelectedAll=false
+                              //         let num=0
+                              //         for( let i = 0; i < res.length; i++){
+                              //               let selected=false
+                              //               if(res[i].isChecked){
+                              //                 selected=true
+                              //                 num++
+                              //               }
+                              //               goods.push({
+                              //                 id: res[i].id,
+                              //                 img: res[i].goodImg.split('|')[0],
+                              //                 name: res[i].goodName,
+                              //                 num: res[i].count,
+                              //                 selected: selected,
+                              //                 price: res[i].price,
+                              //                 specId: res[i].goodSpecId,
+                              //                 specifications:res[i].specs
+                              //               })
+                              //           }
+                              //           if(num == res.length){
+                              //               isSelectedAll=true
+                              //           }
+                              //           this.setState({dataSource:type1.cloneWithRows(goods),isSelectedAll})
+                              //           this.total()
+                              //       },(error)=>{
+                              //           Alert.alert(error+'')    
+                              //       }) 
+                              //  }
                             }
                           }>
                            <View style={styles.listGoodDetailsFunctionMinusSignWrap}>
@@ -251,19 +320,42 @@ class Goods extends Component{
                           <Text style={styles.listGoodDetailsNumberText}>{rowData.num}</Text>
                           <TouchableOpacity style={styles.listGoodDetailsNumberFunctionAdd} onPress={
                             ()=>{
-                              let params={
+                              Cookie.get(global.url).then((cookie) => {
+                                if(!cookie||!cookie.userId){
+                                  let params={
                                     id:this.state.dataSource._dataBlob.s1[selected].id
                                   }
-                              fetch(global.url+'/API/MyCart/plus','post',params,(responseData)=>{
-                                  if(responseData.success){
-                                    this.state.dataSource._dataBlob.s1[selected].num++
-                                   let num=this.goodsTotalNum(this.state.dataSource._dataBlob.s1)
-                                    DeviceEventEmitter.emit('num', num)
-                                    let newDataSource = JSON.parse(JSON.stringify(this.state.dataSource._dataBlob.s1))
-                                    this.setState({dataSource: this.state.dataSource.cloneWithRows(newDataSource)})
-                                    this.total()
-                                 }
-                              })
+                                  this.state.dataSource._dataBlob.s1[selected].num++
+                                  let newDataSource = JSON.parse(JSON.stringify(this.state.dataSource._dataBlob.s1))
+                                  this.setState({dataSource: this.state.dataSource.cloneWithRows(newDataSource)})
+                                  let num=this.goodsTotalNum(this.state.dataSource._dataBlob.s1)
+                                  DeviceEventEmitter.emit('num', num)
+                                  for(let i=0;i<newDataSource.length;i++){
+                                    newDataSource[i].count=num
+                                  }
+                                  global.storage.save({
+                                    key: 'goods',  // 注意:请不要在key中使用_下划线符号!
+                                    data: newDataSource
+                                  });
+                                  this.total()
+                                }else{
+                                  let params={
+                                    id:this.state.dataSource._dataBlob.s1[selected].id
+                                  }
+                                  fetch(global.url+'/API/MyCart/plus','post',params,(responseData)=>{
+                                      if(responseData.success){
+                                        this.state.dataSource._dataBlob.s1[selected].num++
+                                      let num=this.goodsTotalNum(this.state.dataSource._dataBlob.s1)
+                                        DeviceEventEmitter.emit('num', num)
+                                        let newDataSource = JSON.parse(JSON.stringify(this.state.dataSource._dataBlob.s1))
+                                        this.setState({dataSource: this.state.dataSource.cloneWithRows(newDataSource)})
+                                        this.total()
+                                    }
+                                  })
+                                }
+                              }
+                               )
+                             
                               
                             }
                           }>

@@ -13,7 +13,8 @@ import {
   Modal,
   TouchableHighlight,
   Alert,
-  TouchableOpacity
+  TouchableOpacity,
+  RefreshControl
 } from 'react-native';
 import { StackNavigator } from 'react-navigation';
 import Cookie from 'react-native-cookie';
@@ -45,7 +46,8 @@ class NineBox extends React.Component{
                 subscribe:true,
                 type:"",
                 vip:0
-            }
+            },
+            isRefreshing:false
         }
         fetch(global.url+'/API/user/getUserCard?openid=','GET','',(responseData)=>{
                  this.setState({happyCart:responseData.data.length});
@@ -71,6 +73,14 @@ class NineBox extends React.Component{
               },(error)=>{
               })
       this.getCookie()
+      Cookie.get(global.url).then((cookie) => {
+          let IsLogin=0
+            if(cookie||cookie.userId){
+                IsLogin=1
+            }
+            this.setState({IsLogin})
+        }
+       )
     }
     setModalVisible(visible) {
         this.setState({modalVisible: visible});
@@ -103,19 +113,58 @@ class NineBox extends React.Component{
             }
         })
     }
-
+    _onRefresh() {
+        this.setState({isRefreshing: true});
+        setTimeout(() => {
+          // prepend 10 items
+          fetch(global.url+'/API/user/getStateNum','get','',(responseData)=>{
+            if(responseData.success){
+                 this.setState({
+                     paymentDt:responseData.data.paymentDt,
+                     shipmentDt:responseData.data.shipmentDt,
+                     goodsReceiptDt:responseData.data.goodsReceiptDt,
+                     commentDt:responseData.data.commentDt,
+                     returnReject:responseData.data.returnReject
+                 })
+            }else{
+                console.error(responseData.message)
+            }
+           })
+    
+          this.setState({
+            isRefreshing: false,
+          });
+        }, 1000);
+    }
     render(){
         const { navigate } = this.props.navigation;
         return(
-            <ScrollView contentContainerStyle={{paddingBottom:10}}>
+            <ScrollView contentContainerStyle={{paddingBottom:10}} refreshControl={
+                <RefreshControl
+                  refreshing={this.state.isRefreshing}
+                  onRefresh={this._onRefresh.bind(this)}
+                  tintColor="#ff0000"
+                  title="Loading..."
+                  titleColor="#00ff00"
+                  colors={['#ff0000', '#00ff00', '#0000ff']}
+                  progressBackgroundColor="#ffff00"
+                />
+              } >
                 <ImageBackground style={styles.header}  source={require('../images/headerBg.jpg')}>
                     <View style={{paddingLeft:pxToDp(60),width:"100%"}}>
-                        <View style={{width:pxToDp(120),height:pxToDp(120),borderRadius:100,overflow: "hidden"}}>
+                        <TouchableOpacity onPress={()=>{
+                            Cookie.get(global.url).then((cookie) => {
+                                if(!cookie||!cookie.userId){
+                                  navigate('Login')
+                                }
+                              }
+                               )
+                        }} style={{width:pxToDp(120),height:pxToDp(120),borderRadius:100,overflow: "hidden"}}>
                             {this.state.dataSource.user.headerImg?<Image  style={{width:pxToDp(120),height:pxToDp(120),}} source={{uri:this.state.dataSource.user.headerImg}}></Image>:<Image  style={{width:pxToDp(120),height:pxToDp(120),}} source={require('../images/headPonter.png')}></Image>}
-                        </View>
+                        </TouchableOpacity>
                         <View style={styles.headerNameJifen}>
-                            <Text style={styles.headerName}>{this.state.dataSource.user.nickName}</Text>
-                            {/* <Text style={styles.headerJifen}>积分：{this.state.dataSource.user.consumption}</Text> */}
+                            {this.state.IsLogin?<Text style={styles.headerName}>{this.state.dataSource.user.nickName}</Text>:<Text onPress={()=>navigate('Login')} style={styles.headerName}>请点击登录</Text>}
+                            {this.state.dataSource.user.companyName?<Text style={styles.headerJifen}>{this.state.dataSource.user.companyName}</Text>:null}
                         </View>
                         {/* <View style={styles.vip}>
                             <Text style={{color:"#0000ee"}}>VIP{this.state.dataSource.user.vip}</Text>
@@ -176,10 +225,10 @@ class NineBox extends React.Component{
                       <View style={styles.myOrder}>
                           <Image style={styles.myOrderImg} source={require('../images/myOrder.png')}></Image>
                           <Text style={styles.myOrderText} onPress={()=>{
-                        this.goLogin("MyAllOrder")
+                        this.goLogin("OfflineOrder")
                     }}>线下订单</Text>
                           <Text style={styles.allOrderText} onPress={()=>{
-                       this.goLogin("MyAllOrder")
+                       this.goLogin("OfflineOrder")
                     }}>查看全部订单</Text>
                           <Image  style={styles.allOrderImg} source={require('../images/dir.png')}></Image>
                       </View>
@@ -194,35 +243,35 @@ class NineBox extends React.Component{
                             <Text>团到家卡</Text>
                         </View>
                     </TouchableOpacity>
-                    <TouchableHighlight style={styles.discountWrap} onPress={() => {
-                            this.goLogin("MyCoupon")
+                    <TouchableOpacity style={styles.discountWrap} onPress={() => {
+                            this.goLogin("EnterpriseAccount")
                       }}>
                         <View style={styles.discountWrap}>
-                            <Text style={styles.discountWrapText}>{this.state.coupon}</Text>
-                            <Text>优惠券</Text>
+                            <Text style={styles.discountWrapText}></Text>
+                            <Text>企业账户</Text>
                         </View>
-                    </TouchableHighlight>
+                    </TouchableOpacity>
                     <View style={styles.verticalLine}>
                     </View>
                 </View>
-                <View style={styles.line}></View>
+                {/* <View style={styles.line}></View>
                 <TouchableOpacity style={styles.evaluationSheet} onPress={() => this.goLogin("MyComment") }>
                     <Image style={styles.evaluationSheetImg1} source={require('../images/camera.png')}></Image>
                     <Text style={styles.evaluationSheetText}>我的评价晒单</Text>
                     <Image style={styles.evaluationSheetImg2} source={require('../images/dir.png')}></Image>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
                 <View style={styles.line}></View>
                 <TouchableOpacity style={styles.evaluationSheet} onPress={() =>  this.goLogin("AddressManage")  }>
                     <Image style={styles.evaluationSheetImg1} source={require('../images/address.png')}></Image>
                     <Text style={styles.evaluationSheetText}>地址管理</Text>
                     <Image style={styles.evaluationSheetImg2} source={require('../images/dir.png')}></Image>
                 </TouchableOpacity>
-                <View style={styles.line1px}></View>
+                {/* <View style={styles.line1px}></View>
                 <TouchableOpacity style={styles.evaluationSheet} onPress={()=> this.goLogin("MyCollection") }>
                     <Image style={styles.evaluationSheetImg1} source={require('../images/star.png')}></Image>
                     <Text style={styles.evaluationSheetText}>我的收藏</Text>
                     <Image style={styles.evaluationSheetImg2} source={require('../images/dir.png')}></Image>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
                 <View style={styles.line1px}></View>
                 <TouchableOpacity style={styles.evaluationSheet} onPress={()=>  this.goLogin("MyInfo")}>
                     <Image style={styles.evaluationSheetImg1} source={require('../images/person.png')}></Image>
@@ -263,6 +312,9 @@ class NineBox extends React.Component{
                               console.log('CookieManager.clearAll =>', res);
                               this.setState({btn:false})
                               this.setModalVisible(!this.state.modalVisible)
+                              global.storage.remove({
+                                key: 'Cookie'
+                              });
                               navigate('Home')
                             });
                         }}>
@@ -286,8 +338,9 @@ const styles = StyleSheet.create({
         position: "absolute",
         left: pxToDp(200),
         fontSize: pxToDp(14),
-        width: pxToDp(140),
+        width: pxToDp(500),
         height: pxToDp(120),
+        justifyContent: 'center',
         backgroundColor: 'rgba(0,0,0,0)'
     },
     headerName: {

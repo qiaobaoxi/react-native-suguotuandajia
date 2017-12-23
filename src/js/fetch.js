@@ -8,7 +8,7 @@ module.exports=(url,method,params1,callback,err,)=>{
     //   }
     // }
     var myHeaders = new Headers({
-      'User-Agent': 'App',
+      'User-Agent': 'TDJAPP',
       'Accept': 'application/json',
       "Content-Type": "application/json",
       // 'Cookie': cookieStr
