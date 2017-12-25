@@ -55,15 +55,20 @@ class Store extends Component{
           payNum: 1,
           payName: '微信支付',
         };
+        console.log(global.addressId)
         if(!global.addressId){
           global.addressId=0
         }
+        
         let params={
            addressId: global.addressId,
            defaultDeliveryType: '0',
            products: global.goods
         }
         fetch(global.url+'/API/MyCart/checkout','post',params,(responseData)=>{
+               if(!responseData.success){
+                 Alert.alert(responseData.message)
+               }
               if(responseData.data.address){
                 global.addressId=responseData.data.address.id
               }
@@ -350,7 +355,7 @@ const styles = StyleSheet.create({
       borderBottomColor:'#daddde'
     },
     headerBack: {
-      width: pxToDp(34),
+      width: pxToDp(28),
       height: pxToDp(34),
     },
     headerText: {

@@ -37,7 +37,7 @@ class Login extends Component{
             smsCode: this.state.code
         }
         fetch(global.url+'/api/user/UserLogin','post',params,(responseData)=>{
-            
+            console.log(responseData)
             if(responseData.result){
                 global.storage.load({
                     key: 'goods',

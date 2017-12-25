@@ -23,7 +23,8 @@ import {
   TouchableOpacity,
   Alert,
   ListView,
-  Modal
+  Modal,
+  RefreshControl
 } from 'react-native';
 import Cookie from 'react-native-cookie';
 import fetch from '../js/fetch'
@@ -46,19 +47,35 @@ class StorePayment extends Component{
           QRcode:'',
           OneDimensionalCode: '',
           cardBalance: '',
-          enterpriseAccountBalance: ''
+          enterpriseAccountBalance: '',
+          isRefreshing:false
         }
         fetch(global.url+'/api/User/GetPayCode?','get','',(responseData)=>{
-           console.log(responseData)
-            this.setState({OneDimensionalCode:responseData.data.barCodeSrc,QRcode:responseData.data.qrCodeSrc,code:responseData.data.code})   
-        }) 
-        fetch(global.url+'/api/User/GetBalance','get','',(responseData)=>{
-           this.setState({cardBalance:responseData.data.cardBalance,enterpriseAccountBalance:responseData.data.enterpriseAccountBalance})   
-       }) 
+          console.log(responseData)
+          this.setState({OneDimensionalCode:responseData.data.barCodeSrc,QRcode:responseData.data.qrCodeSrc,code:responseData.data.code})   
+      }) 
+      fetch(global.url+'/api/User/GetBalance','get','',(responseData)=>{
+          this.setState({cardBalance:responseData.data.cardBalance,enterpriseAccountBalance:responseData.data.enterpriseAccountBalance})   
+      }) 
+        
     }
     componentDidUpdate(){
-      
+      // Alert.alert('111')
     }
+    _onRefresh() {
+      this.setState({isRefreshing: true});
+      setTimeout(() => {
+        // prepend 10 items
+        fetch(global.url+'/api/User/GetPayCode?','get','',(responseData)=>{
+          console.log(responseData)
+          this.setState({OneDimensionalCode:responseData.data.barCodeSrc,QRcode:responseData.data.qrCodeSrc,code:responseData.data.code})   
+      }) 
+      fetch(global.url+'/api/User/GetBalance','get','',(responseData)=>{
+          this.setState({cardBalance:responseData.data.cardBalance,enterpriseAccountBalance:responseData.data.enterpriseAccountBalance})   
+      }) 
+      this.setState({isRefreshing: false});
+      }, 1000);
+  }
     render(){
       const { navigate } = this.props.navigation;
         return(
@@ -66,7 +83,17 @@ class StorePayment extends Component{
           <View style={styles.header}>
               <Text style={styles.headerText}>门店付款</Text>
           </View>
-          <ScrollView style={{backgroundColor:'#f68900',height:scrrollHeight(pxToDp(240))}}>
+          <ScrollView style={{backgroundColor:'#f68900',height:scrrollHeight(pxToDp(240))}} refreshControl={
+          <RefreshControl
+            refreshing={this.state.isRefreshing}
+            onRefresh={this._onRefresh.bind(this)}
+            tintColor="#ff0000"
+            title="Loading..."
+            titleColor="#00ff00"
+            colors={['#ff0000', '#00ff00', '#0000ff']}
+            progressBackgroundColor="#ffff00"
+          />
+        }>
             <View style={styles.body}>
               <View style={styles.shopPaymentCode}>
                 <Image style={styles.shopPaymentCodeImg} source={require('../images/code.png')}></Image><Text style={styles.shopPaymentCodeText}>门店付款</Text>

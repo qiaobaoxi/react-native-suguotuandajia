@@ -8,7 +8,7 @@
  * https://github.com/facebook/react-native
  * @flow
  */
-import React, { Component } from 'react';
+import React, { Component,PureComponent } from 'react';
 import {
   Platform,
   StyleSheet,
@@ -32,6 +32,7 @@ import {
 import CookieManager from 'react-native-cookies';
 import Cookie from 'react-native-cookie';
 import fetch from '../js/fetch'
+import { constants } from 'react-native-camera';
 const deviceWidthDp = Dimensions.get('window').width;
 const deviceHeightDp = Dimensions.get('window').height;
 
@@ -45,7 +46,7 @@ function scrrollHeight(uiElementHeight) {
   return deviceHeightDp-uiElementHeight;
 }
 global.back='Goods'
-class Goods extends Component{
+class Goods extends PureComponent{
     constructor(props) {
         super(props);
         console.disableYellowBox = true;
@@ -70,7 +71,7 @@ class Goods extends Component{
         }
         this.getGoodsList()
     }
-    getGoodsList(){
+    getGoodsList(add){
       fetch(this.state.url,'post',this.state.params1,(responseData)=>{
         if(responseData.data.goods.length==0){
           this.setState({isLoad:false})
@@ -98,7 +99,6 @@ class Goods extends Component{
             specsId: specsId,
             num: num})
         }
-        console.log(this.state.goods,responseData)
         this.setState({dataSource:this.state.goods,isLoad:false,isNextSuccess:1});
         clearTimeout(this.state.timer)
       })
@@ -115,16 +115,20 @@ class Goods extends Component{
                 cartNum += responseData.data.shopCartListDt[i].count
                 global.goods.push({goodSpecId:responseData.data.shopCartListDt[i].goodSpecId,count:responseData.data.shopCartListDt[i].count,goodId:responseData.data.shopCartListDt[i].goodId})
               }
-              for(let i=0;i<this.state.goods.length;i++){
-                for(j=0;j<global.goods.length;j++){
-                  if(this.state.goods[i].id==global.goods[j].goodId){
-                    this.state.goods[i].num=1
-                    this.setState({dataSource:this.state.goods})
+              if(!add){
+            
+                
+                for(let i=0;i<this.state.goods.length;i++){
+                  for(j=0;j<global.goods.length;j++){
+                    if(this.state.goods[i].id==global.goods[j].goodId){
+                      this.state.goods[i].num=1
+                      this.setState({dataSource:this.state.goods})
+                    }
                   }
                 }
+                totalPrice = totalPrice.toFixed(2)
+                this.setState({cartNum,totalPrice});
               }
-              totalPrice = totalPrice.toFixed(2)
-              this.setState({cartNum,totalPrice});
               console.log(global.goods)
             }else{
               Alert.alert(JSON.stringify(global.storageGoods))
@@ -208,11 +212,20 @@ class Goods extends Component{
                                 Cookie.get(global.url).then((cookie) => {
                                   if(cookie&&!!cookie.userId){
                                     fetch(global.url+'/API/ProductDetail/joinCart','post',params,(responseData)=>{
-                                      this.getGoodsList()
-                                        // this.setState({num:responseData.cartNum})
+                                      // this.state.dataSource[index].num=1
+                                      // this.setState({dataSource:this.state.dataSource})
+                                      if(responseData.success){
+                                        this.getGoodsList("add")
+                                        this.state.dataSource[index].num=1
+                                        let cartNum=++this.state.cartNum
+                                        this.state.totalPrice=this.state.dataSource[index].price+parseFloat(this.state.totalPrice)
+                                        let totalPrice=this.state.totalPrice.toFixed(2)
+                                        this.setState({cartNum,totalPrice,dataSource:this.state.dataSource,goods:this.state.dataSource,num:responseData.cartNum})
+                                      }
+                                        
                                         // Alert.alert(JSON.stringify(responseData))
                                     })
-                                    this.state.dataSource[i].num++ 
+                            
                                     this.state.getNum()
                                   }else{
                                     console.log(this.state.dataSource[index])
@@ -399,6 +412,8 @@ class Goods extends Component{
                   contentContainerStyle={styles.listWrap}
                   horizontal={false}
                   numColumns={2}
+                  refreshing={true}
+                  removeClippedSubviews={false}
                   data={this.state.dataSource}
                   extraData={this.state}
                   renderItem={({item,index}) => this._renderRow(item,index)}

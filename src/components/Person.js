@@ -130,7 +130,12 @@ class NineBox extends React.Component{
                 console.error(responseData.message)
             }
            })
-    
+            fetch(global.url+'/API/user/getUserCard?openid=','GET','',(responseData)=>{
+                    this.setState({happyCart:responseData.data.length});
+                })
+            fetch(global.url+'/API/user/getUserCouponNum?openid=','get','',(responseData)=>{
+                    this.setState({coupon:responseData.data[0].count});
+                })
           this.setState({
             isRefreshing: false,
           });

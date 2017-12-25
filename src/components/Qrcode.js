@@ -229,7 +229,6 @@ class QRScannerRectView extends Component {
     }
     
     render() {
-        // console.log(this.props)
         const animatedStyle = {
             transform: [
                 {translateY: this.state.animatedValue}
@@ -399,19 +398,26 @@ class QRScannerView extends Component {
         super(props);
         //通过这句代码屏蔽 YellowBox
         console.disableYellowBox = true;
-        this.state={timer:null}
+        global.timer=true
+    }
+    changeTimer(){
+        global.timer=true
     }
     onScanResultReceived(data){
         const { navigate } = this.props.navigation;
-        clearTimeout(this.state.timer)
-        this.state.timer=setTimeout(()=>{
-            if(data.data.indexOf('http')){
-                navigate('About',{text:data.data})
-            }else{
-                navigate('Cart',{text:data.data})
-            }
-        },100)
+        if(global.timer){
+            global.timer=false
+                if(data.data.indexOf('http')){
+                    navigate('About',{text:data.data,changeTimer:this.changeTimer})
+                    setTimeout(()=>{
+                        global.timer=true
+                      },3000)
+                }else{
+                    navigate('Cart',{text:data.data,changeTimer:this.changeTimer})
+                }
+        }
     }
+    
     render() {
         const { navigate } = this.props.navigation;
         Cookie.get(global.url).then((cookie) => {
@@ -487,7 +493,7 @@ const styles = StyleSheet.create({
       headerBack: {
         marginLeft: pxToDp(26),
         marginRight: pxToDp(26),
-        width: pxToDp(23),
+        width: pxToDp(40),
         height: pxToDp(40),
       },
       headerText: {

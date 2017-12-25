@@ -37,9 +37,10 @@ class Index extends Component{
         // }) 
     }
     handleMessage(evt: any) {
-      global.addressId=evt.nativeEvent.data.addressId
+      let data=JSON.parse(evt.nativeEvent.data)
+      global.addressId=data.addressId
       const { navigate } = this.props.navigation;
-      navigate('Order',evt.nativeEvent.data)
+      navigate('Order')
     }
     render(){
         const { navigate } = this.props.navigation;

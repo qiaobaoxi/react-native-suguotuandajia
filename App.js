@@ -301,10 +301,7 @@ class EnterpriseAccountScreen extends React.Component {
 }
 class AboutScreen extends React.Component {
   static navigationOptions = {
-    title: 'about:blank',
-    headerTintColor: 'white',
-    headerStyle: {backgroundColor:'#393a3f'},
-    headerBackTitle:null
+    header:null
   };
   render() {
     return (
@@ -314,10 +311,7 @@ class AboutScreen extends React.Component {
 }
 class CartScreen extends React.Component {
   static navigationOptions = {
-    title: '扫码绑卡',
-    headerTintColor: 'white',
-    headerStyle: {backgroundColor:'#393a3f'},
-    headerBackTitle:null
+    header:null
   };
   render() {
     return (
