@@ -3,3 +3,4 @@ react-native bundle --entry-file index.js --bundle-output ./ios/bundle/index.ios
 
 
 react-native bundle --entry-file index.js --bundle-output ./android/app/src/main/assets/index.android.jsbundle --platform android --assets-dest ./android/app/src/main/res --dev false
+ 
