@@ -27,7 +27,8 @@ import {
   AsyncStorage,
   RefreshControl,
   SectionList,
-  FlatList
+  FlatList,
+  DeviceEventEmitter
 } from 'react-native';
 import CookieManager from 'react-native-cookies';
 import Cookie from 'react-native-cookie';
@@ -49,7 +50,7 @@ global.back='Goods'
 class Goods extends PureComponent{
     constructor(props) {
         super(props);
-        console.disableYellowBox = true;
+        // console.disableYellowBox = true;
         let url = global.url+"/API/home/getGoodsList"
         const { params } = this.props.navigation.state;
         if (typeof params != 'object') {
@@ -197,7 +198,7 @@ class Goods extends PureComponent{
                    <View><Text style={styles.goodsSpecifications}>规格：{data.specs}</Text></View>
                    <View style={styles.goodsPriceWrap}>
                      <Text style={styles.goodsPriceSymbol}>¥</Text><Text style={styles.goodsPriceNumber}>{data.price}</Text>
-                     <TouchableOpacity onPress={()=>{
+              <TouchableOpacity onPress={() => {
                          for (i=0;i<this.state.dataSource.length;i++) {
                             if (i==index) {
                                 let good=this.state.dataSource[i]
@@ -208,22 +209,28 @@ class Goods extends PureComponent{
                                   goodName: good.name,
                                   goodspecifications: good.specsId,
                                   price: good.price
-                                }
-                                Cookie.get(global.url).then((cookie) => {
-                                  if(cookie&&!!cookie.userId){
+                              }
+                              Cookie.get(global.url).then((cookie) => {
+                                
+                                if (!!cookie && !!cookie.userId) {
+                                  console.log(params)
                                     fetch(global.url+'/API/ProductDetail/joinCart','post',params,(responseData)=>{
                                       // this.state.dataSource[index].num=1
                                       // this.setState({dataSource:this.state.dataSource})
+                                      console.log(responseData)
                                       if(responseData.success){
                                         this.getGoodsList("add")
                                         this.state.dataSource[index].num=1
-                                        let cartNum=++this.state.cartNum
+                                        let cartNum = ++this.state.cartNum
+                                        DeviceEventEmitter.emit('num', cartNum);
                                         this.state.totalPrice=this.state.dataSource[index].price+parseFloat(this.state.totalPrice)
                                         let totalPrice=this.state.totalPrice.toFixed(2)
                                         this.setState({cartNum,totalPrice,dataSource:this.state.dataSource,goods:this.state.dataSource,num:responseData.cartNum})
                                       }
                                         
                                         // Alert.alert(JSON.stringify(responseData))
+                                    }, (err) => { 
+                                        console.log(err)
                                     })
                             
                                     this.state.getNum()
@@ -269,7 +276,7 @@ class Goods extends PureComponent{
                                         let price=data[i].count*data[i].price
                                         totalPrice+=price
                                       }
-                                      console.log(data,params)
+                                      DeviceEventEmitter.emit('num', num);
                                       totalPrice=totalPrice.toFixed(2)
                                       this.setState({totalPrice: totalPrice,cartNum: num})
                                       global.storage.save({
@@ -278,14 +285,6 @@ class Goods extends PureComponent{
                                       });
                                     }).catch(err => {
                                       console.warn(err.message);
-                                      switch (err.name) {
-                                          case 'NotFoundError':
-                                              // TODO;
-                                              break;
-                                            case 'ExpiredError':
-                                                // TODO
-                                                break;
-                                      }
                                     })
                                     let That=this
                                   global.storage.sync = {
@@ -296,6 +295,7 @@ class Goods extends PureComponent{
                                       data.push(params)
                                       totalPrice += params.price
                                       num += Number(params.count)
+                                      DeviceEventEmitter.emit('num', num);
                                       That.setState({totalPrice: totalPrice, cartNum: num})
                                       // this.setState({totalPrice: params.price,cartNum: params.count})
                                       global.storage.save({
@@ -375,7 +375,7 @@ class Goods extends PureComponent{
         return(
             <View style={{height: '100%'}}>
               <ImageBackground style={styles.search} source={require('../images/headerBg.jpg')}>
-                <TouchableOpacity style={{height:'100%',justifyContent:"center"}} onPress={() => navigate('Home')}>
+                <TouchableOpacity style={{height:'100%',justifyContent:"center"}} onPress={() => goBack()}>
                   <Image style={styles.searchBack} source={require('../images/back1.png')}></Image>
                 </TouchableOpacity>
                 <TextInput
@@ -394,7 +394,7 @@ class Goods extends PureComponent{
                   this.setState({params1:this.state.params1})
                   this.getGoodsList()
                 }}> <Image style={styles.searchImg} source={require('../images/search.png')}></Image></TouchableOpacity> */}
-                <TouchableOpacity  style={{height:'100%',width: pxToDp(50),justifyContent:"center",position: 'relative',zIndex: 100}} onPress={this._onPressSearch.bind(this)}>
+                <TouchableOpacity  style={{height:'100%',width: pxToDp(50),justifyContent:"center",position: 'relative',zIndex: 100,left: pxToDp(-80)}} onPress={this._onPressSearch.bind(this)}>
                   <Image style={styles.searchImg} source={require('../images/search.png')}></Image>
                 </TouchableOpacity>
               </ImageBackground>
@@ -521,8 +521,8 @@ const styles = StyleSheet.create({
     search: {
       flexDirection :'row',
       alignItems: "center",
-      height: pxToDp(130),
-      paddingTop: pxToDp(40),
+      height: Platform.OS==='android'?pxToDp(100):pxToDp(130),
+      paddingTop: 0,
       borderWidth: pxToDp(1),
       borderBottomColor: '#daddde',
       backgroundColor: 'white',
@@ -537,14 +537,15 @@ const styles = StyleSheet.create({
     searchInput: {
       padding: 0,
       paddingLeft: pxToDp(38),
-      width: pxToDp(652),
+      width:  Platform.OS==='android'?pxToDp(652):pxToDp(652),
       height: pxToDp(54),
       backgroundColor:"#eeeeee",
       borderRadius:pxToDp(38)
     },
     searchImg: {
       position:'absolute',
-      right: pxToDp(70),
+      right: pxToDp(0),
+      zIndex: 100,
       width: pxToDp(34),
       height: pxToDp(34),
     },
@@ -555,11 +556,11 @@ const styles = StyleSheet.create({
     },
     goods:{
       marginTop: pxToDp(10),
-      width: pxToDp(355),
+      width: pxToDp(360),
       backgroundColor: 'white',
       height: pxToDp(540),
       marginLeft: pxToDp(9),
-      marginRight: pxToDp(9)
+      marginRight: pxToDp(4)
     },
     goodsImg:{
       width: '100%',
@@ -769,9 +770,6 @@ const styles = StyleSheet.create({
       fontSize: pxToDp(20),
       color: 'white',
       backgroundColor: '#f43530',
-      borderWidth: pxToDp(1),
-      borderColor: 'white',
-      borderRadius: 100,
       borderTopLeftRadius: 100,
       zIndex:2000
     },

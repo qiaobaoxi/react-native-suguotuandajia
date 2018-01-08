@@ -3,8 +3,8 @@ package com.sgtdj;
 import android.app.Application;
 
 import com.facebook.react.ReactApplication;
-import im.shimo.react.cookie.CookieManagerPackage;
-import com.psykar.cookiemanager.CookieManagerPackage;
+// import im.shimo.react.cookie.CookieManagerPackage;
+// import com.psykar.cookiemanager.CookieManagerPackage;
 import com.learnium.RNDeviceInfo.RNDeviceInfo;
 import org.devio.rn.splashscreen.SplashScreenReactPackage;
 import com.theweflex.react.WeChatPackage;
@@ -29,8 +29,8 @@ public class MainApplication extends Application implements ReactApplication {
     protected List<ReactPackage> getPackages() {
       return Arrays.<ReactPackage>asList(
           new MainReactPackage(),
-            new CookieManagerPackage(),
-            new CookieManagerPackage(),
+            new im.shimo.react.cookie.CookieManagerPackage(),
+            new com.psykar.cookiemanager.CookieManagerPackage(),
             new RNDeviceInfo(),
             new SplashScreenReactPackage(),
             new WeChatPackage(),

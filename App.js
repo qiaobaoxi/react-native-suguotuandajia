@@ -16,6 +16,16 @@ import {
   Alert,
   DeviceEventEmitter
 } from 'react-native';
+import Cookie from 'react-native-cookie';
+import Fetch from './src/js/fetch'
+import HeaderClose from './src/js/headerClose'
+import Header from './src/js/header'
+import CookieManager from 'react-native-cookies';
+// global.CookieManager = CookieManager
+// global.HeaderClose = HeaderClose
+// global.Header = Header
+// global.Cookie = Cookie
+// global.Fetch = Fetch
 import TabNavigator from 'react-native-tab-navigator';
 import { StackNavigator } from 'react-navigation';
 import SplashScreen from 'react-native-splash-screen'
@@ -43,28 +53,23 @@ import MyCoupon from './src/components/MyCoupon';
 import MyInfo from './src/components/MyInfo';
 import AddressManage from './src/components/AddressManage';
 import OrderDetail from './src/components/OrderDetail';
-import CookieManager from 'react-native-cookies';
-import fetch from './src/js/fetch'
 import Storage from 'react-native-storage';
-import Cookie from 'react-native-cookie';
+
 var storage = new Storage({
   // 最大容量，默认值1000条数据循环存储
   size: 1000,
-
   // 存储引擎：对于RN使用AsyncStorage，对于web使用window.localStorage
   // 如果不指定则数据只会保存在内存中，重启后即丢失
   storageBackend: AsyncStorage,
-    
   // 数据过期时间，默认一整天（1000 * 3600 * 24 毫秒），设为null则永不过期
   defaultExpires: 1000 * 3600 * 300,
-    
   // 读写时在内存中缓存数据。默认启用。
   enableCache: true,
 })  
 global.storage = storage;
 const deviceWidthDp = Dimensions.get('window').width;
 const uiWidthPx = 750;
-global.url='http://wx.haipibaobao.com'
+global.url='http://dalv.ipet66.com'
 // global.storage.remove({
 //   key: 'goods'
 // });
@@ -78,80 +83,69 @@ function pxToDp(uiElementPx) {
 class HomeScreen extends Component<{}> {
   componentDidMount() {
       SplashScreen.hide();
-      this.subscription = DeviceEventEmitter.addListener('num', (num)=>{
+    this.subscription = DeviceEventEmitter.addListener('num', (num) => {
            this.setState({num:num})
       })
   }
   constructor(props) {
-    super(props);
-    console.disableYellowBox = true;
-    const { params } = this.props.navigation.state;
-    if(!!params&&!!params.page){
-      this.state = {
-        selectedTab: params.page
-      }
-    }else{
-      this.state = {
+      super(props);
+      // console.disableYellowBox = true;
+      const { params } = this.props.navigation.state;
+      if(!!params&&!!params.page){
+        this.state = {
+          selectedTab: params.page
+        }
+      }else{
+        this.state = {
           selectedTab: 'index'
+        }
       }
-    }
-    let num = 0
-    // AsyncStorage.getItem('goods',(error,result)=>{
-    //     if(result){
-    //       let goods=JSON.parse(result)
-    //       for(let i=0;i<goods.length;i++){
-    //          num+=goods[i].num
-    //       }
-    //       this.setState({num:num})
-    //     }
-    // })
-    global.storage.load({
-      key: 'Cookie',
-      // syncInBackground(默认为true)意味着如果数据过期，
-      // 在调用sync方法的同时先返回已经过期的数据。
-      // 设置为false的话，则等待sync方法提供的最新数据(当然会需要更多时间)。
-      syncInBackground: true,
-      
-      // 你还可以给sync方法传递额外的参数
-      syncParams: {
-      extraFetchOptions: {
-      // 各种参数
-      },
-    someFlag: true,
-      },
-    }).then(ret => {
-      let parems={
-        userId:ret
-      }
-      Cookie.set(global.url, 'userId', ret).then(() => console.log('success'));
-        fetch(global.url+'/api/User/ReLogin','post',parems,(responseData)=>{
-          Alert.alert(0)
+      let num = 0
+      //判断cookie存不存在，防止长时间存在没有修改重置cookie
+      global.storage.load({
+        key: 'Cookie',
+        // syncInBackground(默认为true)意味着如果数据过期，
+        // 在调用sync方法的同时先返回已经过期的数据。
+        // 设置为false的话，则等待sync方法提供的最新数据(当然会需要更多时间)。
+        syncInBackground: true,
+        // 你还可以给sync方法传递额外的参数
+          syncParams: {
+          extraFetchOptions: {
+          // 各种参数
+          },
+          someFlag: true,
+        },
+      }).then(ret => {
+        let parems={
+          userId:ret
+        }
+        //重置cookie
+        Cookie.set(global.url, 'userId', ret).then(() => console.log('success'));
+        //从后台重新加载cookie
+        Fetch(global.url + '/api/User/ReLogin', 'post', parems, (responseData) => {
           Cookie.get(global.url).then((cookie) => {
-            global.storage.save({
-              key: 'Cookie',  // 注意:请不要在key中使用_下划线符号!
-              data: cookie
-            });
-        });
-      },(error)=>{
-        Alert.alert('2')
-         console.log(error)
-      })
-    }).catch(err => {
-      console.warn(err.message);
-      switch (err.name) {
-          case 'NotFoundError':
-              // TODO;
-              break;
-            case 'ExpiredError':
-                // TODO
-                break;
-      }
-    })
-    Cookie.get(global.url).then((cookie) => {
-      if(!!cookie&&!!cookie.userId){
-        fetch(global.url+'/api/home/getInitData','GET','',(responseData)=>{
-          this.setState({num:responseData.cartNum})
+              //长时间储存cookie
+              global.storage.save({
+                key: 'Cookie',  // 注意:请不要在key中使用_下划线符号!
+                data: cookie
+              });
+          });
+        },(error)=>{
+          console.log(error)
         })
+      }).catch(err => {
+        console.warn(err.message);
+        // Alert.alert('用户加载失败')
+      })
+      //判断用户存不存在获取商品数量
+     Cookie.get(global.url).then((cookie) => {
+       if (!!cookie && !!cookie.userId) {
+        //如果用户存在从后台获取
+       Fetch(global.url+'/api/home/getInitData','GET','',(responseData)=>{
+          this.setState({num:responseData.cartNum})
+       }, (err) => { 
+           Alert.alert('商品数量获取失败')   
+       })
       }else{
         global.storage.load({
           key: 'goods',
@@ -221,7 +215,6 @@ class HomeScreen extends Component<{}> {
                       }
                      )
                   }}>
-                  
                   <StorePayment navigation={this.props.navigation} />
               </TabNavigator.Item>
               <TabNavigator.Item
@@ -237,7 +230,7 @@ class HomeScreen extends Component<{}> {
                   renderIcon={() => <Image style={styles.menuImg3} source={require('./src/images/gouwuche.png')} />}
                   renderSelectedIcon={() => <Image style={styles.menuImg3} source={require('./src/images/gouwuche-1.png')} />}
                   onPress={() => this.setState({ selectedTab: 'shoppingCart' })}>
-                  <ShoppingCart navigation={this.props.navigation} />
+          <ShoppingCart navigation={this.props.navigation} num={this.state.num} />
               </TabNavigator.Item>
             <TabNavigator.Item
                 selected={this.state.selectedTab === 'my'}
@@ -275,10 +268,7 @@ class QRcodeScreen extends React.Component {
 }
 class OfflineOrderScreen extends React.Component {
   static navigationOptions = {
-    title: '线下订单列表',
-    headerTintColor: 'white',
-    headerStyle: {backgroundColor:'#393a3f'},
-    headerBackTitle:null
+    header:null
   };
   render() {
     return (
@@ -288,10 +278,7 @@ class OfflineOrderScreen extends React.Component {
 }
 class EnterpriseAccountScreen extends React.Component {
   static navigationOptions = {
-    title: '企业账户',
-    headerTintColor: 'white',
-    headerStyle: {backgroundColor:'#393a3f'},
-    headerBackTitle:null
+    header:null
   };
   render() {
     return (
@@ -321,10 +308,7 @@ class CartScreen extends React.Component {
 }
 class AddressScreen extends React.Component {
   static navigationOptions = {
-    headerTintColor: 'black',
-    headerStyle: {backgroundColor:'white'},
-    headerTitle:'请选择送货地址',
-    headerBackTitle:null,
+   header:null
   };
   render() {
     return (
@@ -384,9 +368,7 @@ class PaymentSuccessScreen extends React.Component {
 }
 class MyAllOrderSuccessScreen extends React.Component {
   static navigationOptions = {
-    headerTitle: '线上订单列表',
-    headerStyle: {backgroundColor:'white'},
-    headerBackTitle:null,
+    header:null
   };
   render() {
     return (
@@ -396,9 +378,7 @@ class MyAllOrderSuccessScreen extends React.Component {
 }
 class GroupArrivesHomeSuccessScreen extends React.Component {
   static navigationOptions = {
-    headerTitle: '企业采购',
-    headerStyle: {backgroundColor:'white'},
-    headerBackTitle:null,
+   header:null
   };
   render() {
     return (
@@ -408,9 +388,7 @@ class GroupArrivesHomeSuccessScreen extends React.Component {
 }
 class MyCardCouponsSuccessScreen extends React.Component {
   static navigationOptions = {
-    headerTitle: '我的卡券',
-    headerStyle: {backgroundColor:'white'},
-    headerBackTitle:null,
+    header:null
   };
   render() {
     return (
@@ -456,9 +434,7 @@ class MyCouponSuccessScreen extends React.Component {
 }
 class MyInfoSuccessScreen extends React.Component {
   static navigationOptions = {
-    title: '个人资料',
-    headerStyle: {backgroundColor:'white'},
-    headerBackTitle:null,
+    header:null
   };
   render() {
     return (
@@ -468,9 +444,7 @@ class MyInfoSuccessScreen extends React.Component {
 }
 class AddressManageSuccessScreen extends React.Component {
   static navigationOptions = {
-    title: '地址管理',
-    headerStyle: {backgroundColor:'white'},
-    headerBackTitle:null,
+    header:null
   };
   render() {
     return (
@@ -573,9 +547,7 @@ const styles = StyleSheet.create({
     fontSize: pxToDp(20),
     color: 'white',
     backgroundColor: '#ff5a00',
-    borderWidth: pxToDp(1),
-    borderColor: 'white',
-    borderRadius: 100,
+   
   },
   badge1: {
     textAlign: 'center',
@@ -583,9 +555,7 @@ const styles = StyleSheet.create({
     fontSize: pxToDp(20),
     color: 'white',
     backgroundColor: '#ff5a00',
-    borderWidth: pxToDp(1),
-    borderColor: 'white',
-    borderRadius: 100,
+   
   }
 });
 const RootNavigator = StackNavigator({

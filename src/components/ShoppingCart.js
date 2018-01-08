@@ -41,184 +41,173 @@ function scrrollHeight(uiElementHeight) {
 class Goods extends Component{
     constructor(props) {
         super(props);
-        console.disableYellowBox = true;
+        // console.disableYellowBox = true;
         var type1 = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
-        Cookie.get(global.url).then((cookie) => {
-          if(cookie&&!!cookie.userId){
-            fetch(global.url+'/API/MyCart/getShopCartList','post','',(responseData)=>{
-              let goods =[]
-              let res=responseData.data.shopCartListDt
-              console.log()
-              let isSelectedAll=false
-              let num=0
-              for( let i = 0; i < res.length; i++){
-                    let selected=false
-                    if(res[i].isChecked){
-                       selected=true
-                       num++
-                    }
-                     goods.push({
-                      id: res[i].id,
-                      img: res[i].goodImg.split('|')[0],
-                      name: res[i].goodName,
-                      num: res[i].count,
-                      selected: selected,
-                      price: res[i].price,
-                      specId: res[i].goodSpecId,
-                      specifications:res[i].specs
-                     })
-                 }
-                 if(num==res.length){
-                    isSelectedAll=true
-                 }
-                 this.setState({dataSource:type1.cloneWithRows(goods),isSelectedAll})
-                 this.total()
-          },(error)=>{
-              Alert.alert(error+'')    
-          }) 
-          }else{
-            global.storage.load({
-              key: 'goods',
-              // syncInBackground(默认为true)意味着如果数据过期，
-              // 在调用sync方法的同时先返回已经过期的数据。
-              // 设置为false的话，则等待sync方法提供的最新数据(当然会需要更多时间)。
-              syncInBackground: true,
-              
-              // 你还可以给sync方法传递额外的参数
-              syncParams: {
-              extraFetchOptions: {
-              // 各种参数
-              },
-            someFlag: true,
-              },
-            }).then(ret => {
-              console.log(ret)
-              let goods =[]
-              for( let i = 0; i < ret.length; i++){
-                console.log(
-                  ret
-                )
-                 goods.push({
-                  id: ret[i].id,
-                  img: ret[i].img,
-                  name: ret[i].goodName,
-                  num: ret[i].count,
-                  selected: true,
-                  price: ret[i].price,
-                  specifications:ret[i].goodspecifications
-                 })
-             }
-              this.setState({dataSource:type1.cloneWithRows(goods),isSelectedAll:true})
-              this.total()
-            }).catch(err => {
-            console.warn(err.message);
-            switch (err.name) {
-                case 'NotFoundError':
-                    // TODO;
-                    break;
-                  case 'ExpiredError':
-                      // TODO
-                      break;
-            }
-            })
-          }
-        });
-        
-        // AsyncStorage.getItem('goods',(error,result)=>{
-        //     if(result){
-        //       let goods =[]
-        //        let res=JSON.parse(result)
-        //        for( let i = 0; i < res.length; i++){
-        //            goods.push({
-        //             id: res[i].id,
-        //             img: res[i].img,
-        //             name: res[i].name,
-        //             num: res[i].num,
-        //             selected: true,
-        //             price:res[i].price,
-        //             specifications:res[i].specs
-        //            })
-        //        }
-        //        this.setState({dataSource:type1.cloneWithRows(goods),isSelectedAll:true})
-        //        this.total()
-        //     }
-        // })
+        this.shoppingCart(this)
         this.state={dataSource:type1.cloneWithRows([
           ]),isSelectedAll:false,totalPrice:'',totalNum:''}
-    }
-    total(){
-        let newTotalPrice=0
-        let newTotalNum=0
-        global.goods=[]
-        for (let i = 0;i < this.state.dataSource._dataBlob.s1.length;i++) {
-             if(this.state.dataSource._dataBlob.s1[i].selected){
-               let price= this.state.dataSource._dataBlob.s1[i].price*this.state.dataSource._dataBlob.s1[i].num
-               let num= this.state.dataSource._dataBlob.s1[i].num
-               newTotalPrice+=price;
-               newTotalNum+=Number(num)
-               global.goods.push({goodSpecId:this.state.dataSource._dataBlob.s1[i].specId,count:num})
-             }
-        }
-        this.setState({totalPrice:newTotalPrice.toFixed(2),totalNum:newTotalNum})
-    }
-    goodsTotalNum(goods){
-      let num=0
-      for(let i=0;i<goods.length;i++){
-          num+=goods[i].num
+  }
+  //购物车初始化
+  shoppingCart(That) { 
+    var type1 = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
+    Cookie.get(global.url).then((cookie) => {
+      //用户存在的话从后台获取
+      if(cookie&&!!cookie.userId){
+        fetch(global.url + '/API/MyCart/getShopCartList', 'post', '', (responseData) => {
+          let goods = []
+          let res = responseData.data.shopCartListDt
+          let isSelectedAll = false
+          let num = 0
+          for( let i = 0; i < res.length; i++){
+            let selected = false
+            if(res[i].isChecked){
+                selected = true
+                num++
+            }
+            goods.push({
+              id: res[i].id,
+              img: res[i].goodImg.split('|')[0],
+              name: res[i].goodName,
+              num: res[i].count,
+              selected: selected,
+              price: res[i].price,
+              specId: res[i].goodSpecId,
+              specifications:res[i].specs
+            })
+          }
+          if (num==res.length) {
+            isSelectedAll=true
+          }
+          That.setState({dataSource:type1.cloneWithRows(goods),isSelectedAll})
+          That.total()
+        },(error)=>{
+          Alert.alert(error+'')    
+        }) 
+      } else {
+        //用户不存在查看本地存储物品
+        global.storage.load({
+          key: 'goods',
+          // syncInBackground(默认为true)意味着如果数据过期，
+          // 在调用sync方法的同时先返回已经过期的数据。
+          // 设置为false的话，则等待sync方法提供的最新数据(当然会需要更多时间)。
+          syncInBackground: true,
+          // 你还可以给sync方法传递额外的参数
+          syncParams: {
+            extraFetchOptions: {
+            // 各种参数
+            },
+            someFlag: true,
+          },
+        }).then(ret => {
+          let goods =[]
+          for( let i = 0; i < ret.length; i++){
+            goods.push({
+              id: ret[i].id,
+              img: ret[i].img,
+              name: ret[i].goodName,
+              num: ret[i].count,
+              selected: true,
+              price: ret[i].price,
+              specifications:ret[i].goodspecifications
+            })
+         }
+         That.setState({dataSource:type1.cloneWithRows(goods),isSelectedAll:true})
+         That.total()
+        }).catch(err => {
+          switch (err.name) {
+            case 'NotFoundError':
+              // TODO;
+              break;
+            case 'ExpiredError':
+                // TODO
+                break;
+          }
+        })
       }
-      return num
+    });
+  }
+  //商品总价和数量
+  total(){
+    let newTotalPrice=0
+    let newTotalNum=0
+    global.goods=[]
+    for (let i = 0;i < this.state.dataSource._dataBlob.s1.length;i++) {
+      if(this.state.dataSource._dataBlob.s1[i].selected){
+        let price= this.state.dataSource._dataBlob.s1[i].price*this.state.dataSource._dataBlob.s1[i].num
+        let num= this.state.dataSource._dataBlob.s1[i].num
+        newTotalPrice+=price;
+        newTotalNum+=Number(num)
+        global.goods.push({goodSpecId:this.state.dataSource._dataBlob.s1[i].specId,count:num})
+      }
     }
-    render(){
+    this.setState({totalPrice:newTotalPrice.toFixed(2),totalNum:newTotalNum})
+  }
+  //商品总数量
+  goodsTotalNum(goods){
+    let num=0
+    for(let i=0;i<goods.length;i++){
+      num+=goods[i].num
+    }
+    return num
+  }
+  //查看props是否改变
+  componentWillReceiveProps() { 
+    this.shoppingCart(this)
+  }
+  //点击商品是否选中
+  isSelectedFn(selected) { 
+    this.state.dataSource._dataBlob.s1[selected].selected=!this.state.dataSource._dataBlob.s1[selected].selected
+    let newDataSource = JSON.parse(JSON.stringify(this.state.dataSource._dataBlob.s1))
+    this.setState({dataSource: this.state.dataSource.cloneWithRows(newDataSource)})
+    this.total()
+    let isChecked=0
+    if(this.state.dataSource._dataBlob.s1[selected].selected){
+        isChecked=1
+    }
+    let params={
+      id:this.state.dataSource._dataBlob.s1[selected].id,
+      isChecked:isChecked
+    }
+    fetch(global.url+'/API/MyCart/check','post',params,(responseData)=>{
+          
+    }, (err)=>{ 
+       Alert.alert('选中失败')
+    })
+    let num=0 
+    for(let i=0;i<this.state.dataSource._dataBlob.s1.length;i++) {
+        if(!this.state.dataSource._dataBlob.s1[i].selected){
+            num++
+        }
+    }
+    if(num===0){
+        this.state.isSelectedAll=true
+    }else{
+        this.state.isSelectedAll=false
+    }
+  }
+  render(){
       const { navigate, goBack} = this.props.navigation;
-        return(
-          <View style={{height:'100%'}}>
-            <ImageBackground style={styles.header} source={require('../images/header.jpg')}>
-                 <Text style={styles.headerText}>购物车</Text>
-            </ImageBackground>
-            <ScrollView contentContainerStyle={styles.scrollView}>
-              <ListView
-                contentContainerStyle={styles.List}
-                dataSource={this.state.dataSource}
-                renderRow={(rowData,index,selected) => 
-                  <View style={styles.listItem}>
-                    <TouchableOpacity style={styles.listItemSelectedWrap} onPress={
-                            ()=>{ 
-                              
-                                  this.state.dataSource._dataBlob.s1[selected].selected=!this.state.dataSource._dataBlob.s1[selected].selected
-                                  let newDataSource = JSON.parse(JSON.stringify(this.state.dataSource._dataBlob.s1))
-                                  this.setState({dataSource: this.state.dataSource.cloneWithRows(newDataSource)})
-                                  this.total()
-                                  let isChecked=0
-                                  if(this.state.dataSource._dataBlob.s1[selected].selected){
-                                      isChecked=1
-                                  }
-                                  let params={
-                                    id:this.state.dataSource._dataBlob.s1[selected].id,
-                                    isChecked:isChecked
-                                  }
-                                  fetch(global.url+'/API/MyCart/check','post',params,(responseData)=>{
-                                        
-                                  })
-                                  let num=0 
-                                  for(let i=0;i<this.state.dataSource._dataBlob.s1.length;i++) {
-                                      if(!this.state.dataSource._dataBlob.s1[i].selected){
-                                         num++
-                                      }
-                                  }
-                                  if(num===0){
-                                     this.state.isSelectedAll=true
-                                  }else{
-                                     this.state.isSelectedAll=false
-                                  }
-                            }
-                          } >
-                       <View style={rowData.selected?styles.listItemSelectedActive:styles.listItemSelected}>   
-                        <Image style={styles.listItemSelectedImg} source={require('../images/determine.png')}></Image>
-                       </View> 
-                    </TouchableOpacity> 
-                    <View style={styles.listGoodWrap}>
-                      <Image style={styles.listGood} source={{uri:rowData.img}}></Image>
-                    </View>
+      return(
+        <View style={{height:'100%'}}>
+          <ImageBackground style={styles.header} source={require('../images/header.jpg')}>
+            <Text style={styles.headerText}>购物车</Text>
+          </ImageBackground>
+          <ScrollView contentContainerStyle={styles.scrollView}>
+            <ListView
+              contentContainerStyle={styles.List}
+              dataSource={this.state.dataSource}
+              renderRow={(rowData,index,selected) => 
+              <View style={styles.listItem}>
+                  <TouchableOpacity style={styles.listItemSelectedWrap} onPress={
+                    () => { this.isSelectedFn(selected).bind(this) }
+                    }>
+                    <View style={rowData.selected?styles.listItemSelectedActive:styles.listItemSelected}>   
+                      <Image style={styles.listItemSelectedImg} source={require('../images/determine.png')}></Image>
+                    </View> 
+                  </TouchableOpacity> 
+                  <View style={styles.listGoodWrap}>
+                    <Image style={styles.listGood} source={{uri:rowData.img}}></Image>
+                  </View>
                     <View style={styles.listGoodDetails}>
                       <View>
                         <Text style={styles.listGoodDetailsName} numberOfLines={2}>{rowData.name}</Text>
@@ -273,44 +262,6 @@ class Goods extends Component{
                                   }
                                 }
                                  )
-                                  
-                              //  }else{
-                              //      let params={
-                              //         id:this.state.dataSource._dataBlob.s1[selected].id,
-                              //         isDeleted:1
-                              //       }
-                              //       fetch(global.url+'/API/MyCart/getShopCartList','post',params,(responseData)=>{
-                              //         console.log(responseData)
-                              //         let goods =[]
-                              //         let res=responseData.data.shopCartListDt
-                              //         let isSelectedAll=false
-                              //         let num=0
-                              //         for( let i = 0; i < res.length; i++){
-                              //               let selected=false
-                              //               if(res[i].isChecked){
-                              //                 selected=true
-                              //                 num++
-                              //               }
-                              //               goods.push({
-                              //                 id: res[i].id,
-                              //                 img: res[i].goodImg.split('|')[0],
-                              //                 name: res[i].goodName,
-                              //                 num: res[i].count,
-                              //                 selected: selected,
-                              //                 price: res[i].price,
-                              //                 specId: res[i].goodSpecId,
-                              //                 specifications:res[i].specs
-                              //               })
-                              //           }
-                              //           if(num == res.length){
-                              //               isSelectedAll=true
-                              //           }
-                              //           this.setState({dataSource:type1.cloneWithRows(goods),isSelectedAll})
-                              //           this.total()
-                              //       },(error)=>{
-                              //           Alert.alert(error+'')    
-                              //       }) 
-                              //  }
                             }
                           }>
                            <View style={styles.listGoodDetailsFunctionMinusSignWrap}>
@@ -412,9 +363,9 @@ class Goods extends Component{
 }
 const styles = StyleSheet.create({
     header: {
-      paddingTop: pxToDp(40),
+      paddingTop: Platform.OS==='android'?pxToDp(0):pxToDp(40),
       backgroundColor: 'white',
-      height: pxToDp(130),
+      height: Platform.OS==='android'?pxToDp(90):pxToDp(130),
       flexDirection: 'row',
       alignItems: "center",
       borderBottomWidth: pxToDp(1),
@@ -429,9 +380,6 @@ const styles = StyleSheet.create({
       height: pxToDp(40),
     },
     headerText: {
-      borderLeftWidth: pxToDp(1),
-      borderLeftColor: '#daddde',
-      paddingLeft: pxToDp(24),
       fontSize: pxToDp(36),
       backgroundColor: 'rgba(0,0,0,0)',
       color: 'white'

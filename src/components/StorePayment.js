@@ -42,14 +42,16 @@ function scrrollHeight(uiElementHeight) {
 class StorePayment extends Component{
     constructor(props) {
         super(props);
-        console.disableYellowBox = true;
+        // console.disableYellowBox = true;
         this.state={
           QRcode:'',
           OneDimensionalCode: '',
           cardBalance: '',
           enterpriseAccountBalance: '',
-          isRefreshing:false
-        }
+          isRefreshing: false,
+          timer:null
+      }
+      this.setIntervalFn()
         fetch(global.url+'/api/User/GetPayCode?','get','',(responseData)=>{
           console.log(responseData)
           this.setState({OneDimensionalCode:responseData.data.barCodeSrc,QRcode:responseData.data.qrCodeSrc,code:responseData.data.code})   
@@ -61,8 +63,15 @@ class StorePayment extends Component{
     }
     componentDidUpdate(){
       // Alert.alert('111')
-    }
-    _onRefresh() {
+  }
+  setIntervalFn() { 
+    let timer=setInterval(()=>{ 
+       this._onRefresh()
+    }, 60000)
+    this.setState({timer})
+  }
+  _onRefresh() {
+      clearInterval(this.state.timer)
       this.setState({isRefreshing: true});
       setTimeout(() => {
         // prepend 10 items
@@ -72,9 +81,11 @@ class StorePayment extends Component{
       }) 
       fetch(global.url+'/api/User/GetBalance','get','',(responseData)=>{
           this.setState({cardBalance:responseData.data.cardBalance,enterpriseAccountBalance:responseData.data.enterpriseAccountBalance})   
-      }) 
+        }) 
+         
       this.setState({isRefreshing: false});
-      }, 1000);
+    }, 1000);
+    this.setIntervalFn() 
   }
     render(){
       const { navigate } = this.props.navigation;
@@ -83,7 +94,7 @@ class StorePayment extends Component{
           <View style={styles.header}>
               <Text style={styles.headerText}>门店付款</Text>
           </View>
-          <ScrollView style={{backgroundColor:'#f68900',height:scrrollHeight(pxToDp(240))}} refreshControl={
+          <ScrollView contentContainerStyle={{backgroundColor:'#f68900',paddingBottom:pxToDp(160)}} refreshControl={
           <RefreshControl
             refreshing={this.state.isRefreshing}
             onRefresh={this._onRefresh.bind(this)}
@@ -99,7 +110,7 @@ class StorePayment extends Component{
                 <Image style={styles.shopPaymentCodeImg} source={require('../images/code.png')}></Image><Text style={styles.shopPaymentCodeText}>门店付款</Text>
               </View>
               <View style={styles.bodyCodeImgWrap}>
-                 <Image style={styles.OneDimensionalCode} source={{uri:this.state.OneDimensionalCode}}></Image>
+                 <Image style={styles.OneDimensionalCode} source={{uri:this.state.OneDimensionalCode}} resizeMode={"contain"}></Image>
                  <Text style={styles.seeCodeNum}>{this.state.code}</Text>
                  <Image style={styles.QRCode} source={{uri:this.state.QRcode}}></Image>
               </View>
@@ -147,8 +158,8 @@ class StorePayment extends Component{
 }
 const styles = StyleSheet.create({
      header: {
-      paddingTop: pxToDp(40),
-      height: pxToDp(130),
+      paddingTop: Platform.OS==='android'?0:pxToDp(40),
+      height: Platform.OS==='android'? pxToDp(90):pxToDp(130),
       flexDirection: 'row',
       alignItems: "center",
       justifyContent: 'center',
@@ -161,8 +172,6 @@ const styles = StyleSheet.create({
       height: pxToDp(40),
     },
     headerText: {
-      borderLeftWidth: pxToDp(1),
-      borderLeftColor: 'white',
       paddingLeft: pxToDp(24),
       fontSize: pxToDp(36),
       color:'white'
@@ -196,11 +205,11 @@ const styles = StyleSheet.create({
       marginRight: pxToDp(24),
       borderBottomWidth: pxToDp(1),
       borderBottomColor: '#e1e1e1',
-      alignItems: 'center'
-    },
+      alignItems: 'center',
+     },
     OneDimensionalCode: {
       marginTop: pxToDp(48),
-      width: pxToDp(592),
+      width: pxToDp(530),
       height: pxToDp(166)
     },
     seeCodeNum:{
@@ -292,7 +301,6 @@ const styles = StyleSheet.create({
       marginTop: pxToDp(20),
       marginLeft: pxToDp(22),
       marginRight: pxToDp(22),
-      marginBottom: pxToDp(10),
       borderRadius: 4,
     },
     allAccountImg: {

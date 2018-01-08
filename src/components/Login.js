@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import fetch from '../js/fetch'
 import Cookie from 'react-native-cookie';
+import Header from '../js/header'
 const deviceWidthDp = Dimensions.get('window').width;
 
 const uiWidthPx = 750;
@@ -28,24 +29,25 @@ function pxToDp(uiElementPx) {
 class Login extends Component{
     constructor(props) {
         super(props);
-        this.state={tel: '',code: '',disabled:true,codeDisabled:true,getCodeText:'获取验证码'}
+        this.state={tel: '',code: '',disabled: true,codeDisabled: true,getCodeText: '获取验证码'}
     }
+    //点击登录
     submit(){
         const { navigate } = this.props.navigation;
         let params={
             mobileNo: this.state.tel,
             smsCode: this.state.code
         }
+        //登录获取
         fetch(global.url+'/api/user/UserLogin','post',params,(responseData)=>{
-            console.log(responseData)
-            if(responseData.result){
+            if (responseData.result) {
+                //没有登录的情况下存储商品要给后台
                 global.storage.load({
                     key: 'goods',
                     // syncInBackground(默认为true)意味着如果数据过期，
                     // 在调用sync方法的同时先返回已经过期的数据。
                     // 设置为false的话，则等待sync方法提供的最新数据(当然会需要更多时间)。
                     syncInBackground: true,
-                    
                     // 你还可以给sync方法传递额外的参数
                     syncParams: {
                     extraFetchOptions: {
@@ -53,18 +55,21 @@ class Login extends Component{
                     },
                      someFlag: true,
                     },
-                  }).then(ret => {
+                }).then(ret => {
                     let data = ret
                     for(let i=0;i<data.length;i++){
                         fetch(global.url+'/API/ProductDetail/joinCart','post',data[i],(responseData)=>{
                             // this.setState({num:responseData.cartNum})
                             // Alert.alert(JSON.stringify(responseData))
+                        }, (err)=>{ 
+                            Alert.alert('加入购物车失败')
+                            return 
                         })
                     }
                     global.storage.remove({
                         key: 'goods'
                     });
-                  }).catch(err => {
+                }).catch(err => {
                     console.warn(err.message);
                     switch (err.name) {
                         case 'NotFoundError':
@@ -74,14 +79,21 @@ class Login extends Component{
                               // TODO
                               break;
                     }
-                  })
-                  Cookie.get(global.url).then((cookie) => {
-                    global.storage.save({
-                      key: 'Cookie',  // 注意:请不要在key中使用_下划线符号!
-                      data: cookie.userId
-                    });
-                  });
-                  navigate('Home')
+                })
+                Cookie.get(global.url).then((cookie) => {
+                    console.log(cookie)
+                    if (cookie && !!cookie.userId) {
+                        //存储cookie
+                        global.storage.save({
+                            key: 'Cookie',  // 注意:请不要在key中使用_下划线符号!
+                            data: cookie.userId
+                        });
+                        //跳到首页
+                        navigate('Home')
+                    } else { 
+                        Alert.alert('用户不存在')
+                    }
+                });
             }else{
                 Alert.alert(responseData.errMsg)
             }
@@ -89,6 +101,7 @@ class Login extends Component{
           console.log(error)
         })
     }
+    //登录按钮是否点亮
     isDisabled(){
         if (this.state.tel.length == 11) {
           this.setState({codeDisabled: false})
@@ -97,20 +110,37 @@ class Login extends Component{
         }
         if (this.state.tel && this.state.code) {
             this.setState({disabled: false})
-         }else{
+        }else{
             this.setState({disabled: true})
-         }
+        }
+    }
+    //倒计时
+    countDown() { 
+        let num=60
+        let params = {
+          "mobileNo": this.state.tel,
+        }
+        fetch(global.url+'/api/user/GetSMScode','post',params,(responseData)=>{
+            if(!responseData.result){
+              Alert.alert(errMsg)
+            }
+        },(error)=>{
+          console.log(responseData)
+        })
+        let timer=setInterval(()=>{
+           num--
+           this.setState({getCodeText:num+'s重新获取',codeDisabled: true})
+           if(num==0){
+              clearInterval(timer)
+              this.setState({getCodeText:'获取验证码',codeDisabled: false})
+           }
+        },1000)
     }
     render(){
         const { navigate,goBack } = this.props.navigation;
         return(
             <View style={{backgroundColor:'white',height: '100%'}}>
-                <ImageBackground style={styles.header}  source={require('../images/headerBg.jpg')}>
-                    <TouchableOpacity style={styles.headerBack} onPress={()=>{goBack()}}>
-                        <Image style={styles.headerBackImg} source={require('../images/back1.png')}></Image>
-                    </TouchableOpacity>
-                    <Text style={styles.headerText}>登录</Text>
-                </ImageBackground>    
+                <Header goBack={goBack} text={'登录'}></Header>   
                 <View>
                     <View style={styles.logo}>
                       <Image style={styles.logoImg} source={require('../images/login-logo.png')}></Image>
@@ -123,33 +153,14 @@ class Login extends Component{
                         }} style={[styles.telInput,styles.input]} underlineColorAndroid={'transparent'} placeholder={'手机号'} placeholderTextColor={'#a2a2a2'}/>
                     </View>
                     <View style={[styles.code,styles.input]}>
-                      <TextInput keyboardType="numeric"  onChangeText={(text) => {
+                        <TextInput keyboardType="numeric"  onChangeText={(text) => {
                           this.setState({code:text},()=>{
                             this.isDisabled()
                           })
                           }} style={styles.codeInput} underlineColorAndroid={'transparent'} placeholder={'验证码'} placeholderTextColor={'#a2a2a2'}/>
-                      <TouchableOpacity style={styles.button} onPress={()=>{
-                          let num=60
-                          let params = {
-                            "mobileNo": this.state.tel,
-                          }
-                          fetch(global.url+'/api/user/GetSMScode','post',params,(responseData)=>{
-                              if(!responseData.result){
-                                Alert.alert(errMsg)
-                              }
-                          },(error)=>{
-                            console.log(responseData)
-                          })
-                          let timer=setInterval(()=>{
-                             num--
-                             this.setState({getCodeText:num+'s重新获取',codeDisabled: true})
-                             if(num==0){
-                                
-                                clearInterval(timer)
-                                this.setState({getCodeText:'获取验证码',codeDisabled: false})
-                             }
-                          },1000)
-                      }} disabled={this.state.codeDisabled}><Text style={styles.buttonText}>{this.state.getCodeText}</Text></TouchableOpacity>
+                        <TouchableOpacity style={styles.button} onPress={this.countDown.bind(this)} disabled={this.state.codeDisabled}>
+                            <Text style={styles.buttonText}>{this.state.getCodeText}</Text>
+                        </TouchableOpacity>
                     </View>
                     <TouchableOpacity style={this.state.disabled?styles.submit:styles.submit1} disabled={this.state.disabled} onPress={this.submit.bind(this)}>
                         <Text style={styles.submitText}>登录</Text>
@@ -161,8 +172,8 @@ class Login extends Component{
 }
 const styles = StyleSheet.create({
     header:{
-       paddingTop: pxToDp(40),
-       height: pxToDp(134),
+       paddingTop: Platform.OS==='android'?0:pxToDp(40),
+       height: pxToDp(94),
        backgroundColor: 'white',
        alignItems: 'center',
        justifyContent: 'center',
@@ -171,9 +182,9 @@ const styles = StyleSheet.create({
     headerBack:{
        position: 'absolute',
        left: pxToDp(26),
-       bottom: pxToDp(32),
+       bottom: Platform.OS==='android'?pxToDp(22):pxToDp(32),
        width: pxToDp(50),
-       height: pxToDp(50)
+       height: Platform.OS==='android'?pxToDp(60): pxToDp(50)
     },
     headerBackImg: {
        marginTop: pxToDp(15), 

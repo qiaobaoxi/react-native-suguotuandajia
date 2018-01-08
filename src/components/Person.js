@@ -30,7 +30,7 @@ function pxToDp(uiElementPx) {
 class NineBox extends React.Component{
     constructor(props) {
         super(props);
-        console.disableYellowBox = true;
+        // console.disableYellowBox = true;
         this.state = {modalVisible: false,btn:true};
         this.state.dataSource={
             user:{
@@ -194,35 +194,35 @@ class NineBox extends React.Component{
                     }}>
                         <Image style={styles.goodsWrapImg1} source={require('../images/goods1.png')}></Image>
                         <Text  style={styles.goodsWrapText}>待付款</Text>
-                        {this.state.paymentDt==0||this.state.paymentDt==null?null:<View style={styles.goodsWrapSpanWrap}><Text style={styles.goodsWrapSpan}>{this.state.paymentDt}</Text></View>}
+                        {this.state.paymentDt==0||this.state.paymentDt==null?null:<View style={this.state.paymentDt>=100?styles.goodsWrapSpanWrap1:styles.goodsWrapSpanWrap}><Text style={styles.goodsWrapSpan}>{this.state.paymentDt}</Text></View>}
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.goodsWrap}  onPress={()=>{
                         this.goLogin("MyAllOrder",{num:1})
                     }}>
                         <Image style={styles.goodsWrapImg2} source={require('../images/goods2.png')}></Image>
                         <Text  style={styles.goodsWrapText}>待发货</Text>
-                        {this.state.shipmentDt==0||this.state.shipmentDt==null?null:<View style={styles.goodsWrapSpanWrap}><Text  style={styles.goodsWrapSpan}>{this.state.shipmentDt}</Text></View>}
+                        {this.state.shipmentDt==0||this.state.shipmentDt==null?null:<View style={this.state.shipmentDt>=100?styles.goodsWrapSpanWrap1:styles.goodsWrapSpanWrap}><Text  style={styles.goodsWrapSpan}>{this.state.shipmentDt}</Text></View>}
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.goodsWrap}  onPress={()=>{
                         this.goLogin("MyAllOrder",{num:2})
                     }}>
                         <Image style={styles.goodsWrapImg3} source={require('../images/goods3.png')}></Image>
                         <Text  style={styles.goodsWrapText}>待收货</Text>
-                        {this.state.goodsReceiptDt==0||this.state.goodsReceiptDt==null?null:<View style={styles.goodsWrapSpanWrap}><Text  style={styles.goodsWrapSpan}>{this.state.goodsReceiptDt}</Text></View>}
+                        {this.state.goodsReceiptDt==0||this.state.goodsReceiptDt==null?null:<View style={this.state.goodsReceiptDt>=100?styles.goodsWrapSpanWrap1:styles.goodsWrapSpanWrap}><Text  style={styles.goodsWrapSpan}>{this.state.goodsReceiptDt}</Text></View>}
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.goodsWrap}  onPress={()=>{
                         this.goLogin("MyAllOrder",{num:3})
                     }}>
                         <Image style={styles.goodsWrapImg4} source={require('../images/goods4.png')}></Image>
                         <Text  style={styles.goodsWrapText}>待评价</Text>
-                        {this.state.commentDt==0||this.state.commentDt==null?null:<View style={styles.goodsWrapSpanWrap}><Text  style={styles.goodsWrapSpan}>{this.state.commentDt}</Text></View>}
+                        {this.state.commentDt==0||this.state.commentDt==null?null:<View style={this.state.commentDt>=100?styles.goodsWrapSpanWrap1:styles.goodsWrapSpanWrap}><Text  style={styles.goodsWrapSpan}>{this.state.commentDt}</Text></View>}
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.goodsWrap}  onPress={()=>{
                         this.goLogin("MyAllOrder",{num:4})
                     }}>
                         <Image style={styles.goodsWrapImg5} source={require('../images/goods5.png')}></Image>
                         <Text  style={styles.goodsWrapText}>申请退货</Text>
-                        {this.state.returnReject==0||this.state.returnReject==null?null:<View style={styles.goodsWrapSpanWrap}><Text  style={styles.goodsWrapSpan}>{this.state.returnReject}</Text></View>}
+                        {this.state.returnReject==0||this.state.returnReject==null?null:<View style={this.state.returnReject>=100?styles.goodsWrapSpanWrap1:styles.goodsWrapSpanWrap}><Text  style={styles.goodsWrapSpan}>{this.state.returnReject}</Text></View>}
                     </TouchableOpacity>
                 </View>
                 <View style={styles.line}></View>
@@ -311,9 +311,8 @@ class NineBox extends React.Component{
                         }}>
                           <Text style={styles.cancel}>取消</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity  style={styles.btn} onPress={() => {
-                          CookieManager.clearAll()
-                            .then((res) => {
+                                <TouchableOpacity style={styles.btn} onPress={() => {
+                        CookieManager.clearAll().then((res) => {
                               console.log('CookieManager.clearAll =>', res);
                               this.setState({btn:false})
                               this.setModalVisible(!this.state.modalVisible)
@@ -335,9 +334,9 @@ class NineBox extends React.Component{
 }
 const styles = StyleSheet.create({
     header: {
-        height: pxToDp(328),
+        height: Platform.OS==='android'?pxToDp(298):pxToDp(328),
         width: "100%",
-        paddingTop: pxToDp(140)
+        paddingTop: pxToDp(110)
     },
     headerNameJifen: {
         position: "absolute",
@@ -399,23 +398,24 @@ const styles = StyleSheet.create({
     goods: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        paddingTop: pxToDp(40),
+        paddingTop: Platform.OS==='android'?pxToDp(20):pxToDp(40),
         paddingRight: pxToDp(20),
         paddingBottom: pxToDp(40),
         paddingLeft: pxToDp(20),
         backgroundColor: 'white'
     },
     goodsWrap: {
+        paddingTop:Platform.OS==='android'?pxToDp(20):pxToDp(40),
         position:"relative",
         alignItems: 'center',
         width: pxToDp(140),
     },
     goodsWrapImg1: {
-        width: pxToDp(48),
+        width: pxToDp(50),
         height: pxToDp(44),
     },
     goodsWrapImg2: {
-        width: pxToDp(48),
+        width: pxToDp(50),
         height: pxToDp(44),
     },
     goodsWrapImg3: {
@@ -437,9 +437,28 @@ const styles = StyleSheet.create({
     },
     goodsWrapSpanWrap: {
         position: "absolute",
-        top: pxToDp(-10),
+        top: pxToDp(0),
         right:0,
+        zIndex:100,
         width: pxToDp(36),
+        height: pxToDp(36),
+        borderWidth: pxToDp(2),
+        borderColor: "#f50739",
+        borderRadius: 100,
+        color: "#f50739",
+        textAlign: 'center',
+        fontSize: pxToDp(24),
+        lineHeight: pxToDp(36),
+        overflow: 'hidden',
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    goodsWrapSpanWrap1: {
+        position: "absolute",
+        top: pxToDp(0),
+        right:0,
+        zIndex:100,
+        width: pxToDp(54),
         height: pxToDp(36),
         borderWidth: pxToDp(2),
         borderColor: "#f50739",

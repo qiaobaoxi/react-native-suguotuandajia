@@ -9,10 +9,12 @@ import {
   Dimensions,
   ScrollView,
   WebView,
-  Alert
+  Alert,
+  TouchableOpacity
 } from 'react-native';
 const deviceWidthDp = Dimensions.get('window').width;
 import Cookie from 'react-native-cookie';
+import Header from '../js/header'
 const uiWidthPx = 750;
 
 function pxToDp(uiElementPx) {
@@ -21,7 +23,7 @@ function pxToDp(uiElementPx) {
 class Index extends Component{
     constructor(props) {
         super(props);
-        console.disableYellowBox = true;
+        // console.disableYellowBox = true;
     }
     handleMessage(navigate,e) {
         // Alert.alert(e)
@@ -30,7 +32,7 @@ class Index extends Component{
         // }
     }
     render(){
-        const { navigate} = this.props.navigation;
+        const { navigate, goBack} = this.props.navigation;
         Cookie.get(global.url).then((cookie) => {
             if(!cookie||!cookie.userId){
                 navigate("Login")
@@ -38,22 +40,43 @@ class Index extends Component{
                 Cookie.set(global.url+'/web/myCard.html', 'userId', cookie.userId).then(() => console.log('success'));
             }
         })
-        
         return(
-            <WebView
-                      style={{
-                        backgroundColor: "#e5e5e5",
-                        height: 100,
-                      }}
-                      source={
-                        {uri:global.url+'/web/myCard.html'}
-                 }
-                onMessage={this.handleMessage(navigate)}  
-            />
+            <View style={{flex:1}}>
+                <Header goBack={goBack} text={'我的卡券'}></Header>
+                <WebView
+                        style={{
+                            backgroundColor: "#e5e5e5",
+                            height: 100,
+                        }}
+                        source={
+                            {uri:global.url+'/web/myCard.html'}
+                    }
+                    onMessage={this.handleMessage(navigate)}  
+                />
+            </View>
         );
     }
 }
 const styles = StyleSheet.create({
-    
+    header: {
+        backgroundColor: 'white',
+        height: pxToDp(96),
+        flexDirection: 'row',
+        alignItems: "center",
+        borderBottomWidth: pxToDp(1),
+        borderBottomColor:'#daddde',
+        justifyContent: 'center'
+      },
+      headerBack: {
+        marginLeft: pxToDp(26),
+        marginRight: pxToDp(26),
+        width: pxToDp(40),
+        height: pxToDp(40),
+      },
+      headerText: {
+        fontSize: pxToDp(36),
+        color: 'white',
+        backgroundColor:'rgba(0,0,0,0)'
+      },
 });
 module.exports=Index

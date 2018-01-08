@@ -162,7 +162,7 @@ class Store extends Component{
     }
     constructor(props) {
         super(props);
-        console.disableYellowBox = true;
+        // console.disableYellowBox = true;
         var ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
         // Alert.alert(JSON.stringify(this.provinces(citysWrap)))
         this.state = {

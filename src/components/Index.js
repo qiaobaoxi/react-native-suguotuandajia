@@ -26,7 +26,7 @@ import {
   StatusBar
 } from 'react-native';
 import Cookie from 'react-native-cookie';
-import fetch from '../js/fetch'
+import Fetch from '../js/fetch'
 const deviceWidthDp = Dimensions.get('window').width;
 const deviceHeightDp = Dimensions.get('window').height;
 
@@ -41,152 +41,151 @@ function scrrollHeight(uiElementHeight) {
 class Index extends Component{
     constructor(props) {
         super(props);
-        console.disableYellowBox = true;
+        // console.disableYellowBox = true;
+        //左边菜单
         var type1 = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
-        let type2 = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2,
-                     sectionHeaderHasChanged:(s1,s2)=>r1 !== r2,
+        //右边菜单  
+        let type2 = new ListView.DataSource({
+          rowHasChanged: (r1, r2) => r1 !== r2,
+          sectionHeaderHasChanged:(s1,s2)=>r1 !== r2,
         });
-        this.state = {modalVisible: false,active:0,dataSource: type1.cloneWithRows([
-          ]),
-          type2:type2.cloneWithRows([
-           
-          ]),
+          this.state = {
+          modalVisible: false,
+          active: 0,
+          dataSource: type1.cloneWithRows([]),
+          type2:type2.cloneWithRows([]),
           searchText: ''
-      };
-      let url=global.url+'/API/home/initSgHome'
-      fetch(url,'post','',(responseData)=>{
-        let menu1=[]
-        for(let i=0;i<responseData.data.length;i++){
-          if(i==0){
-            menu1.push({id:responseData.data[i].id,Text:responseData.data[i].name,isActive:true})
-            this.menu2(i,responseData.data)
-          }else{
-            menu1.push({id:responseData.data[i].id,Text:responseData.data[i].name,isActive:false})
-            // this.menu2(i,responseData.data)
-          }     
-        }
-        this.setState({dataSource:type1.cloneWithRows(menu1),menuData:responseData.data})
-      })
+        };
+        //初始化菜单链接
+        let url = global.url + '/API/home/initSgHome'
+        //初始化菜单
+        Fetch(url,'post','',(responseData)=>{
+          let menu1=[]
+          for(let i=0;i<responseData.data.length;i++){
+            if (i == 0) {
+              //添加1级菜单的第一个
+              menu1.push({id:responseData.data[i].id,Text:responseData.data[i].name,isActive:true})
+              //一上来展示二级菜单
+              this.menu2(i, responseData.data)
+            } else {
+              //添加其他1级菜单
+              menu1.push({id:responseData.data[i].id,Text:responseData.data[i].name,isActive:false})
+              // this.menu2(i,responseData.data)
+            }     
+          }
+          this.setState({dataSource:type1.cloneWithRows(menu1),menuData:responseData.data})
+        })
     }
+    //1级菜单的改变二级菜单页跟着改变
     menu2(index,data){
-        let type2 = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2,
-                     sectionHeaderHasChanged:(s1,s2)=>r1 !== r2,
-        });
-        let menu2=[]
-        if(typeof data != 'object'){
-          return
-        }
-        console.log(data[index])
-        // Alert.alert(''+index)
-        for(let i=0;i<data[index].categorys.length;i++){
-          // Alert.alert(JSON.stringify(data[index].categorys[i]))
-            menu2.push({id:data[index].categorys[i].id,name:data[index].categorys[i].name,img:data[index].categorys[i].img})
-        }
-        this.setState({type2:type2.cloneWithRows(menu2)})
+      let type2 = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2,
+          sectionHeaderHasChanged:(s1,s2)=>r1 !== r2,
+      });
+      let menu2=[]
+      if(typeof data != 'object'){
+        return
+      }
+      for(let i=0;i<data[index].categorys.length;i++){
+          menu2.push({id:data[index].categorys[i].id,name:data[index].categorys[i].name,img:data[index].categorys[i].img})
+      }
+      this.setState({type2:type2.cloneWithRows(menu2)})
     }
-    setModalVisible(visible) {
-        this.setState({modalVisible: visible});
-    }
+    //点击1级菜单
     goods1NameFn(dataSource,sectionID){
-       for(let i=0;i<dataSource._dataBlob.s1.length;i++){
-           if(i==sectionID){
+      for(let i=0;i<dataSource._dataBlob.s1.length;i++){
+          if(i==sectionID){
               dataSource._dataBlob.s1[i].isActive=true 
-           }else{
+          }else{
               dataSource._dataBlob.s1[i].isActive=false
-           }
-       }
-       this.menu2(sectionID,this.state.menuData)
-       var newTabs = JSON.parse(JSON.stringify(dataSource._dataBlob.s1));
-       this.setState({dataSource:this.state.dataSource.cloneWithRows(newTabs)})
+          }
+      }
+      this.menu2(sectionID,this.state.menuData)
+      var newTabs = JSON.parse(JSON.stringify(dataSource._dataBlob.s1));
+      this.setState({dataSource:this.state.dataSource.cloneWithRows(newTabs)})
     }
-      _renderRow(data, sectionID, rowID) {
-        const { navigate } = this.props.navigation;
-        return (
-          <View style={styles.goods3body}>
-           <TouchableOpacity onPress={() => navigate('Goods',{id:data.id,getNum:()=>{
-            // this.state.
-           }})}>
+    //二级菜单的list渲染
+    _renderRow(data, sectionID, rowID) {
+      const { navigate } = this.props.navigation;
+      return (
+        <View style={styles.goods3body}>
+          <TouchableOpacity onPress={() =>
+            navigate('Goods', {
+              id: data.id
+            })
+          }>
             <View style={styles.goods3bodyEach}>
               <Image style={styles.goods3bodyImg} source={{uri:data.img}}></Image> 
               <Text style={styles.goods3bodyText} >{data.name}</Text>
             </View> 
-           </TouchableOpacity> 
-          </View>
-        );
-      }
-      _onPressSearch(event){
-        const { navigate } = this.props.navigation;
-        navigate('Goods',{goodname:this.state.searchText})
-      }
-      // _renderSectionHeader(data, sectionID) {
-      //   return (
-      //     <View style={styles.goods3section}>
-      //        <Image style={styles.goods3sectionHeaderImg1} source={require('../images/good3header1.jpg')}></Image><Text style={styles.goods3sectionHeaderText}>{sectionID}</Text><Image style={styles.goods3sectionHeaderImg2} source={require('../images/good3header2.jpg')}></Image>
-      //     </View>
-      //   );
-      // }
-     render(){
+          </TouchableOpacity> 
+        </View>
+      );
+    }
+    //搜索产品
+    _onPressSearch(event){
+      const { navigate } = this.props.navigation;
+      navigate('Goods',{goodname:this.state.searchText})
+    }
+    render(){
       const { navigate } = this.props.navigation;
         return(
              <View>
-               <StatusBar
+                <StatusBar
                   barStyle="light-content"
                 />
                 <View style={styles.header}>
                   <ImageBackground style={styles.headerSearch} source={require('../images/header.jpg')}>
-                          <TouchableOpacity style={{paddingLeft:pxToDp(25)}}  onPress={() => {
-                            
-                            Cookie.get(global.url).then((cookie) => {
-                              if(!cookie||!cookie.userId){
-                                  navigate("Login")
-                              }else{
-                                navigate('QRcode')} 
-                              }
-                          )
-                        }}>
-                            <View style={styles.headerSearchCode}>
-                                <Image style={styles.headerSearchCodeImg} source={require('../images/QRcode.png')}></Image> 
-                                <Text style={styles.headerSearchCodeText}>绑卡</Text>
-                                </View>
-                                </TouchableOpacity>
-                                <View  style={styles.headerSearchBody}>
-                                    <TextInput
-                                    returnKeyType={"search"}
-                                    onEndEditing={this._onPressSearch.bind(this)}
-                            style={styles.headerSearchBodyInput}
-                            underlineColorAndroid={'transparent'}
-                            onChangeText={(text) => this.setState({searchText:text})}
-                            placeholder={'输入关键字直接搜索'}
-                            placeholderTextColor={'#a6a6a6'}
-                          />
-                          <TouchableOpacity style={styles.headerSearchImgWrap} onPress ={()=> navigate('Goods',{goodname:this.state.searchText})}><Image style={styles.headerSearchImg} source={require('../images/search.png')}></Image></TouchableOpacity>
-                        </View>
-                        <TouchableOpacity style={styles.headerSearchMy} onPress={() => navigate('Store')}>
-                            <Image style={styles.headerSearchMyImg} source={require('../images/store.png')}></Image>
-                            <Text  style={styles.headerSearchMyText}>门店</Text>
-                        </TouchableOpacity>
-                  </ImageBackground>
-                  <TouchableOpacity style={styles.headerFunction} onPress={()=>{
+                    <TouchableOpacity style={{paddingLeft:pxToDp(25)}}  onPress={() => {
                       Cookie.get(global.url).then((cookie) => {
                         if(!cookie||!cookie.userId){
                             navigate("Login")
                         }else{
-                          navigate('GroupArrivesHome')
+                          navigate('QRcode')} 
                         }
+                      )
+                    }}>
+                      <View style={styles.headerSearchCode}>
+                          <Image style={styles.headerSearchCodeImg} source={require('../images/QRcode.png')}></Image> 
+                          <Text style={styles.headerSearchCodeText}>绑卡</Text>
+                      </View>
+                    </TouchableOpacity>
+                      <View  style={styles.headerSearchBody}>
+                        <TextInput
+                          returnKeyType={"search"}
+                          onEndEditing={this._onPressSearch.bind(this)}
+                          style={styles.headerSearchBodyInput}
+                          underlineColorAndroid={'transparent'}
+                          onChangeText={(text) => this.setState({searchText:text})}
+                          placeholder={'输入关键字直接搜索'}
+                          placeholderTextColor={'#a6a6a6'}
+                        />
+                        <TouchableOpacity style={styles.headerSearchImgWrap} onPress ={()=> navigate('Goods',{goodname:this.state.searchText})}><Image style={styles.headerSearchImg} source={require('../images/search.png')}></Image></TouchableOpacity>
+                      </View>
+                      <TouchableOpacity style={styles.headerSearchMy} onPress={() => navigate('Store')}>
+                        <Image style={styles.headerSearchMyImg} source={require('../images/customService.png')}></Image>
+                        <Text  style={styles.headerSearchMyText}>客服</Text>
+                      </TouchableOpacity>
+                  </ImageBackground>
+                  <TouchableOpacity style={styles.headerFunction} onPress={()=>{
+                    Cookie.get(global.url).then((cookie) => {
+                      if(!cookie||!cookie.userId){
+                          navigate("Login")
+                      }else{
+                        navigate('GroupArrivesHome')
+                      }
                     })
-                    
-                  }} >
+                    }
+                  }>
                     <Image style={styles.gorupBuy} source={require('../images/groupBuy.jpg')}></Image>
-                 </TouchableOpacity>
+                  </TouchableOpacity>
                 </View>
                 <View style={styles.goodsWrap}>
-                    <ScrollView style={styles.goods1} showsVerticalScrollIndicator={false}> 
-                      <ListView 
-                        dataSource={this.state.dataSource}
-                        renderRow={(rowData,index,sectionID) =><TouchableHighlight onPress={()=>{this.goods1NameFn(this.state.dataSource,sectionID)}}><View style={[styles.goods1Name,rowData.isActive&&styles.goods1NameActive]}><Text style={styles.goods1NameText}>{rowData.Text}</Text><Text style={rowData.isActive?styles.goods1NameTextLine:styles.goods1NameTextLine1}></Text></View></TouchableHighlight>}
-                      />
-                     
-                    </ScrollView> 
+                  <ScrollView style={styles.goods1} showsVerticalScrollIndicator={false}> 
+                    <ListView 
+                      dataSource={this.state.dataSource}
+                      renderRow={(rowData,index,sectionID) =><TouchableHighlight onPress={()=>{this.goods1NameFn(this.state.dataSource,sectionID)}}><View style={[styles.goods1Name,rowData.isActive&&styles.goods1NameActive]}><Text style={styles.goods1NameText}>{rowData.Text}</Text><Text style={rowData.isActive?styles.goods1NameTextLine:styles.goods1NameTextLine1}></Text></View></TouchableHighlight>}
+                    />
+                  </ScrollView> 
                   <ScrollView style={styles.goods2} showsVerticalScrollIndicator={false}> 
                       <Image resizeMode={'stretch'} style={styles.goods2Bnner} source={require('../images/banner.png')}></Image>
                       <ListView 
@@ -194,7 +193,7 @@ class Index extends Component{
                           dataSource={this.state.type2}
                           renderRow={this._renderRow.bind(this)
                         }/>
-                    </ScrollView>  
+                  </ScrollView>  
                 </View>
            </View> 
         );
@@ -210,13 +209,13 @@ const styles = StyleSheet.create({
     height: pxToDp(183)
   },
   headerSearch: {
-      flexDirection:'row',
-      paddingRight:pxToDp(25),
-      paddingTop:pxToDp(60),
-      paddingBottom:pxToDp(18),
-      backgroundColor:'white',
-      height: pxToDp(130),
-  },
+    flexDirection:'row',
+    paddingRight:pxToDp(25),
+    paddingTop:Platform.OS==='android'?pxToDp(15):pxToDp(60),
+    paddingBottom:pxToDp(18),
+    backgroundColor:'white',
+    height: Platform.OS==='android'?pxToDp(100):pxToDp(130),
+},
   headerSearchCode: {
       width:pxToDp(72),
       alignItems:'center',    

@@ -23,13 +23,13 @@ function pxToDp(uiElementPx) {
 class Index extends Component{
     constructor(props) {
         super(props);
-        console.disableYellowBox = true;
+        // console.disableYellowBox = true;
     }
     handleMessage(navigate,e) {
         //   navigate('OrderDetail')
     }
     render(){
-        const { navigate} = this.props.navigation;
+        const { navigate, goBack} = this.props.navigation;
         // Cookie.get(global.url).then((cookie) => {
         //     if(!cookie||!cookie.userId){
         //         navigate("Login")
@@ -41,7 +41,10 @@ class Index extends Component{
         return(
             <View>
                 <ImageBackground style={styles.header} source={require('../images/headerBg.jpg')}>
-                    <TouchableOpacity style={{height:'100%',justifyContent:"center"}} onPress={() => navigate('Home')}>
+                    <TouchableOpacity style={{height:'100%',justifyContent:"center",position: 'absolute',left: pxToDp(0),top:Platform.OS==='android'?0:pxToDp(40),}} onPress={() => {
+                        params.changeTimer()
+                        goBack()
+                    }}>
                         <Image style={styles.headerBack} source={require('../images/back1.png')}></Image>
                     </TouchableOpacity>
                     <Text style={styles.headerText}>about:blank</Text>
@@ -54,11 +57,13 @@ class Index extends Component{
 const styles = StyleSheet.create({
     header: {
         backgroundColor: 'white',
-        height: pxToDp(96),
+        height: Platform.OS==='android'?pxToDp(96):pxToDp(130),
+        paddingTop: Platform.OS==='android'?0:pxToDp(40),
         flexDirection: 'row',
         alignItems: "center",
         borderBottomWidth: pxToDp(1),
-        borderBottomColor:'#daddde'
+        borderBottomColor:'#daddde',
+        justifyContent: 'center'
       },
       headerBack: {
         marginLeft: pxToDp(26),
@@ -67,9 +72,6 @@ const styles = StyleSheet.create({
         height: pxToDp(40),
       },
       headerText: {
-        borderLeftWidth: pxToDp(1),
-        borderLeftColor: '#daddde',
-        paddingLeft: pxToDp(24),
         fontSize: pxToDp(36),
         color: 'white',
         backgroundColor:'rgba(0,0,0,0)'

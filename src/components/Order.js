@@ -27,10 +27,8 @@ import {
   Modal,
   Picker
 } from 'react-native';
-import fetch from '../js/fetch'
-import citysWrap from '../json/citys.json'
-import publicIP from 'react-native-public-ip';
-import CookieManager from 'react-native-cookies';
+import Fetch from '../js/fetch'
+import Header from '../js/header'
 const deviceWidthDp = Dimensions.get('window').width;
 const deviceHeightDp = Dimensions.get('window').height;
 const DeviceInfo = require('react-native-device-info');
@@ -47,7 +45,7 @@ function scrrollHeight(uiElementHeight) {
 class Store extends Component{
     constructor(props) {
         super(props);
-        console.disableYellowBox = true;
+        // console.disableYellowBox = true;
         var ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
         this.state = {
           dataSource: ds.cloneWithRows([]),
@@ -55,29 +53,29 @@ class Store extends Component{
           payNum: 1,
           payName: '微信支付',
         };
-        console.log(global.addressId)
         if(!global.addressId){
           global.addressId=0
+      }
+      setTimeout(() => { 
+          let params={
+            addressId: global.addressId,
+            defaultDeliveryType: '0',
+            products: global.goods
         }
-        
-        let params={
-           addressId: global.addressId,
-           defaultDeliveryType: '0',
-           products: global.goods
-        }
-        fetch(global.url+'/API/MyCart/checkout','post',params,(responseData)=>{
-               if(!responseData.success){
-                 Alert.alert(responseData.message)
-               }
+        Fetch(global.url+'/API/MyCart/checkout','post',params,(responseData)=>{
+                if(!responseData.success){
+                  Alert.alert(responseData.message)
+                }
               if(responseData.data.address){
                 global.addressId=responseData.data.address.id
               }
               if(typeof responseData=='object'){
                 let num=0
                 for(let i=0;i<responseData.data.shopCartListDt.length;i++){
-                  if(responseData.data.shopCartListDt[i].goodId>0){
+                  if(responseData.data.shopCartListDt[i].goodId>=0){
                     num+=responseData.data.shopCartListDt[i].count
                   }else{
+                    console.log(responseData.data.shopCartListDt)
                     this.setState({shippingFee: responseData.data.shopCartListDt[i]})
                     responseData.data.shopCartListDt.splice(i,1)
                   }
@@ -88,20 +86,7 @@ class Store extends Component{
             Alert.alert(error+'')    
         })
         let timeStamp= new Date().getTime()
-    //     let xml=`<xml>
-    //     <appid>wx552eb71ba49e52ad</appid>
-    //     <attach>支付测试</attach>
-    //     <body>APP支付测试</body>
-    //     <mch_id>1483372312</mch_id>
-    //     <nonce_str>${tim}</nonce_str>
-    //     <notify_url>http://wxpay.wxutil.com/pub_v2/pay/notify.v2.php</notify_url>
-    //     <out_trade_no>1415659990</out_trade_no>
-    //     <spbill_create_ip>14.23.150.211</spbill_create_ip>
-    //     <total_fee>1</total_fee>
-    //     <trade_type>APP</trade_type>
-    //     <sign>0CB01533B8C1EF103065174F50BCA001</sign>
-    //  </xml>`
-    //     fetch('https://api.mch.weixin.qq.com/pay/unifiedorder','post',)
+      },500)
     }
     address(navigate){
       if(this.state.address){
@@ -139,13 +124,7 @@ class Store extends Component{
       const { navigate,goBack } = this.props.navigation;
         return(
           <View>
-             <ImageBackground style={styles.header} source={require('../images/headerBg.jpg')}>
-                <TouchableOpacity style={{height:'100%',justifyContent:"center",position:'absolute',
-      left: pxToDp(36),top: pxToDp(36)}} onPress={() => goBack()}>
-                  <Image style={styles.headerBack} source={require('../images/back1.png')}></Image>
-                </TouchableOpacity>
-                <Text style={styles.headerText}>确认订单</Text>
-              </ImageBackground>
+            <Header goBack={goBack} text={'确认订单'}></Header>
             <ScrollView style={styles.scroll}>
                {this.address(navigate)}
                <ListView
@@ -159,7 +138,7 @@ class Store extends Component{
                           <View style={styles.goodsDetail}>
                             <View style={styles.goodsDetailNameWrap}><Text style={styles.goodsDetailName}>{rowData.goodName}</Text></View>
                             <View style={styles.goodsDetailSpecificationsWrap}><Text style={styles.goodsDetailSpecifications}>规格：</Text><Text style={styles.goodsDetailSpecificationsNum}>{rowData.spec}</Text></View>
-                            <View style={styles.goodsDetailPrice}><Text style={styles.goodsDetailPriceSymbol}>¥</Text><Text style={styles.goodsDetailPriceSymbolNum}>{rowData.price*rowData.count}</Text><Text style={styles.goodsNum}>X{rowData.count}</Text></View>
+                            <View style={styles.goodsDetailPrice}><Text style={styles.goodsDetailPriceSymbol}>¥</Text><Text style={styles.goodsDetailPriceSymbolNum}>{(rowData.price*rowData.count).toFixed(2)}</Text><Text style={styles.goodsNum}>X{rowData.count}</Text></View>
                           </View>
                         </View>
                       
@@ -238,7 +217,9 @@ class Store extends Component{
                 <TouchableOpacity style={styles.submitBtn1} onPress={()=>{
                     const { navigate } = this.props.navigation;
                     let arr= this.state.dataSource._dataBlob.s1.slice()
-                    arr.push(this.state.shippingFee)
+                    if(this.state.shippingFee){
+                      arr.push(this.state.shippingFee)
+                    }
                     console.log(arr)
                     let params={
                       isApp: true,
@@ -253,7 +234,7 @@ class Store extends Component{
                       remark: '',
                       isApp:true
                     }
-                    fetch(global.url+'/API/Order/Add','post',params,async (responseData)=>{
+                    Fetch(global.url+'/API/Order/Add','post',params,async (responseData)=>{
                       // Alert.alert(JSON.stringify(responseData))
                       console.log(responseData)
                       if(!responseData.success){
@@ -312,15 +293,6 @@ class Store extends Component{
                     </TouchableOpacity>
                   </View>
                   <View>
-                    {/* <TouchableOpacity style={styles.Alipay} onPress={()=>{
-                      this.setState({payNum:1})
-                    }}>
-                      <Image style={styles.AlipayImg} source={require('../images/Alipay.png')}></Image>
-                      <Text  style={styles.AlipayName}>支付宝</Text>
-                      <View style={this.state.payNum==1?styles.determineActive:styles.determine}>
-                        <Image style={styles.determineImg} source={require('../images/determine.png')}></Image>
-                      </View>
-                    </TouchableOpacity> */}
                     <TouchableOpacity style={styles.wechat}  onPress={()=>{
                       this.setState({payNum:2})
                     }}>
@@ -343,27 +315,6 @@ class Store extends Component{
     }
 }
 const styles = StyleSheet.create({
-    header: {
-      backgroundColor: 'white',
-      height: pxToDp(130),
-      paddingTop: pxToDp(40),
-      flexDirection: 'row',
-      alignItems: "center",
-      justifyContent: 'center',
-      position:'relative',
-      borderBottomWidth: pxToDp(1),
-      borderBottomColor:'#daddde'
-    },
-    headerBack: {
-      width: pxToDp(28),
-      height: pxToDp(34),
-    },
-    headerText: {
-      paddingLeft: pxToDp(24),
-      fontSize: pxToDp(36),
-      backgroundColor: 'rgba(0,0,0,0)',
-      color: 'white'
-    },
     userDetail: {
       borderTopWidth: pxToDp(1),
       borderTopColor:'#daddde',

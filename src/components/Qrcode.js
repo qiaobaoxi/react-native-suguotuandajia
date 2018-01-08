@@ -17,6 +17,7 @@ import
     ImageBackground
 } from 'react-native';
 import Cookie from 'react-native-cookie';
+import Header from '../js/header'
 const deviceWidthDp = Dimensions.get('window').width;
 
 const uiWidthPx = 750;
@@ -397,7 +398,7 @@ class QRScannerView extends Component {
     constructor(props) {
         super(props);
         //通过这句代码屏蔽 YellowBox
-        console.disableYellowBox = true;
+        // console.disableYellowBox = true;
         global.timer=true
     }
     changeTimer(){
@@ -419,7 +420,7 @@ class QRScannerView extends Component {
     }
     
     render() {
-        const { navigate } = this.props.navigation;
+        const { navigate ,goBack} = this.props.navigation;
         Cookie.get(global.url).then((cookie) => {
             if(!cookie||!cookie.userId){
                 navigate("Login")
@@ -428,12 +429,7 @@ class QRScannerView extends Component {
         })
         return (
             <View style={{flex: 1}}>
-                <ImageBackground style={styles.header} source={require('../images/headerBg.jpg')}>
-                    <TouchableOpacity style={{height:'100%',justifyContent:"center"}} onPress={() => navigate('Home')}>
-                        <Image style={styles.headerBack} source={require('../images/back1.png')}></Image>
-                    </TouchableOpacity>
-                    <Text style={styles.headerText}>请扫描二维码</Text>
-                </ImageBackground>
+                <Header goBack={goBack} text={'请扫描二维码'}></Header>
                 <Camera
                     onBarCodeRead={this.onScanResultReceived.bind(this)}
                     ref={(cam) => {
@@ -482,28 +478,7 @@ class QRScannerView extends Component {
 
 
 const styles = StyleSheet.create({
-    header: {
-        backgroundColor: 'white',
-        height: pxToDp(96),
-        flexDirection: 'row',
-        alignItems: "center",
-        borderBottomWidth: pxToDp(1),
-        borderBottomColor:'#daddde'
-      },
-      headerBack: {
-        marginLeft: pxToDp(26),
-        marginRight: pxToDp(26),
-        width: pxToDp(40),
-        height: pxToDp(40),
-      },
-      headerText: {
-        borderLeftWidth: pxToDp(1),
-        borderLeftColor: '#daddde',
-        paddingLeft: pxToDp(24),
-        fontSize: pxToDp(36),
-        color: 'white',
-        backgroundColor:'rgba(0,0,0,0)'
-      },
+    
     buttonsContainer: {
         position: 'absolute',
         height: 100,
