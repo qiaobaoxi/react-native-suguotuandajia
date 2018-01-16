@@ -37,10 +37,15 @@ class Index extends Component{
             <View style={{flex: 1}}>
             <Header goBack={goBack} text={'个人资料'}></Header>
             <WebView
-                      style={{
-                        backgroundColor: "#e5e5e5",
-                        height: 100,
-                      }}
+                style={{
+                    backgroundColor: "#e5e5e5",
+                    height: 100,
+                }}
+                startInLoadingState={true}    
+                userAgent='TDJAPP'      
+                renderError={() => {
+                    return (<View style={styles.container}><Text>网络出错,请联系客服</Text></View>)
+                }}
                       source={
                         {uri: global.url+'/web/my/myInfo.html'}
                  }

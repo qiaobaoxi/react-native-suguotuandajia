@@ -25,14 +25,14 @@ class Index extends Component{
         super(props);
         // console.disableYellowBox = true;
     }
-    handleMessage(navigate,e) {
-        // Alert.alert(e)
+    handleMessage(navigate, e) {
         // if(e){
         //   navigate('Home')
         // }
     }
     render(){
-        const { navigate, goBack} = this.props.navigation;
+        const { navigate, goBack } = this.props.navigation;
+        let sTime = new Date().getTime()
         Cookie.get(global.url).then((cookie) => {
             if(!cookie||!cookie.userId){
                 navigate("Login")
@@ -47,9 +47,14 @@ class Index extends Component{
                         style={{
                             backgroundColor: "#e5e5e5",
                             height: 100,
-                        }}
+                    }}
+                    startInLoadingState={true}
+                    userAgent='TDJAPP'
+                    renderError={() => {
+                        return (<View style={styles.container}><Text>网络出错,请联系客服</Text></View>)
+                    }}
                         source={
-                            {uri:global.url+'/web/myCard.html'}
+                            {uri:global.url+'/web/myCard.html?sTime='+sTime}
                     }
                     onMessage={this.handleMessage(navigate)}  
                 />

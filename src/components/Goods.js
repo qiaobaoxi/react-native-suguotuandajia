@@ -31,6 +31,7 @@ import {
   DeviceEventEmitter
 } from 'react-native';
 import CookieManager from 'react-native-cookies';
+import Spinner from 'react-native-loading-spinner-overlay';
 import Cookie from 'react-native-cookie';
 import fetch from '../js/fetch'
 import { constants } from 'react-native-camera';
@@ -48,389 +49,405 @@ function scrrollHeight(uiElementHeight) {
 }
 global.back='Goods'
 class Goods extends PureComponent{
-    constructor(props) {
-        super(props);
-        // console.disableYellowBox = true;
-        let url = global.url+"/API/home/getGoodsList"
-        const { params } = this.props.navigation.state;
-        if (typeof params != 'object') {
-            return
-        }
-        let keyword=''
-        if(params&&!!params.goodname){
-          keyword=params.goodname
-        }
-        let params1 = {addressLabel:"00060001",categoryId:71,keyword:keyword,loadAll:false,pageIndex:0}
-        this.state={dataSource:[],modalVisible: false,
-          num: 1,
-          url,params1,
-          goods : [
-          ],
-          isLoad:false,
-          getNum:params.getNum,
-          goodname:''
-        }
-        this.getGoodsList()
+  constructor(props) {
+    super(props);
+    // console.disableYellowBox = true;
+    let url = global.url+"/API/home/getGoodsList"
+    const { params } = this.props.navigation.state;
+    //参数必传
+    if (typeof params != 'object') {
+      Alert.alert('参数出错')
+      return
     }
-    getGoodsList(add){
-      fetch(this.state.url,'post',this.state.params1,(responseData)=>{
-        if(responseData.data.goods.length==0){
-          this.setState({isLoad:false})
-          return
+    this.subscription = DeviceEventEmitter.addListener('goodNum', (num) => {
+      this.getGoodsList('goBack')
+    })
+    let keyword=''
+    if (params && !!params.goodname) {
+      keyword = params.goodname
+    }
+    let params1 = {addressLabel:"00060001",categoryId:0,keyword:keyword,loadAll:false,pageIndex:0}
+    this.state = {
+      dataSource: [],
+      modalVisible: false,
+      num: 1,
+      url,params1,
+      goods: [],
+      isLoad: false,
+      getNum: params.getNum,
+      goodname: keyword,
+      length: 1,
+      indexSeach: keyword,
+      visible: false
+    }
+    //初始加载
+    this.getGoodsList('init')
+  }
+  //加载产品信息
+  getGoodsList(type) {
+    if (type === 'goBack') { 
+      this.isCookies()
+      return
+    }
+    //加载分页数据
+    fetch(this.state.url, 'post', this.state.params1, (responseData) => {
+      if (responseData.data.goods.length == 0 && type === 'init') {
+        this.setState({ length:0})
+        return
+      }
+      if (responseData.data.goods.length == 0 && type === 'page' && this.state.isLoad) {
+        this.setState({ isLoad: false,params1:this.state.params2})
+        return
+      }
+      if (responseData.data.goods.length == 0 && type === 'search') {
+        this.setState({ length:0 })
+        return
+      }
+      for(var i=0;i<responseData.data.goods.length;i++){
+        var good=responseData.data.goods[i]
+        let specs=''
+        if (good.specs.length>1) {
+          specs = '多规格'
+        } else {
+          specs = good.specs[0].spec
         }
-        for(var i=0;i<responseData.data.goods.length;i++){
-          var good=responseData.data.goods[i]
-          let specs=''
-          if (good.specs.length>1) {
-              specs = '多规格'
-          } else {
-              specs = good.specs[0].spec
-          }
-          let specsId = ''
-          if (good.specs.length==1) {
-            specsId = good.specs[0].id
-          } 
-          let num=0
-          console.log(good.goodImg.split('|'))
-          this.state.goods.push({id: good.id,
-            img: good.goodImg.split('|')[0],
-            name: good.goodName,
-            price: good.price,
-            specs: specs,
-            specsId: specsId,
-            num: num})
-        }
-        this.setState({dataSource:this.state.goods,isLoad:false,isNextSuccess:1});
-        clearTimeout(this.state.timer)
-      })
-      Cookie.get(global.url).then((cookie) => {
-        setTimeout(()=>{
-        if(cookie&&!!cookie.userId){
-          fetch(global.url+'/API/MyCart/getShopCartList','post','',(responseData)=>{
-            if(responseData.success){
-              let totalPrice = 0
-              let cartNum = 0
-              global.goods = []
-              for(let i = 0;i < responseData.data.shopCartListDt.length;i++){
-                totalPrice += responseData.data.shopCartListDt[i].price*responseData.data.shopCartListDt[i].count
-                cartNum += responseData.data.shopCartListDt[i].count
-                global.goods.push({goodSpecId:responseData.data.shopCartListDt[i].goodSpecId,count:responseData.data.shopCartListDt[i].count,goodId:responseData.data.shopCartListDt[i].goodId})
+        let specsId = ''
+        if (good.specs.length==1) {
+          specsId = good.specs[0].id
+        } 
+        let num=0
+        this.state.goods.push({id: good.id,
+          img: good.goodImg.split('|')[0],
+          name: good.goodName,
+          price: good.price,
+          specs: specs,
+          specsId: specsId,
+          num: num})
+      }
+      let length=1
+      if (this.state.goods.length === 0) { 
+        length=0
+      }
+      this.setState({dataSource : this.state.goods,isLoad : false,isNextSuccess : 1,length: length,indexSeach:this.state.params1.keyword });
+      this.isCookies()
+    })
+  }
+  //cookie是否存在存在从后台取购物车数据没有从本地存储取数据
+  isCookies() {
+    Cookie.get(global.url).then((cookie) => {
+          if (cookie && !!cookie.userId) {
+            fetch(global.url+'/API/MyCart/getShopCartList','post','',(responseData)=>{
+              if (responseData.success) {
+                let totalPrice = 0
+                let cartNum = 0
+                global.goods = []
+                for(let i = 0;i < responseData.data.shopCartListDt.length;i++){
+                  totalPrice += responseData.data.shopCartListDt[i].price*responseData.data.shopCartListDt[i].count
+                  cartNum += responseData.data.shopCartListDt[i].count
+                  global.goods.push({goodSpecId:responseData.data.shopCartListDt[i].goodSpecId,count:responseData.data.shopCartListDt[i].count,goodId:responseData.data.shopCartListDt[i].goodId})
+                }
+                DeviceEventEmitter.emit('num', cartNum);
+                  for(let i=0;i<this.state.goods.length;i++){
+                    for (j = 0; j < global.goods.length; j++){
+                      if(this.state.goods[i].id==global.goods[j].goodId){
+                        this.state.goods[i].num=1
+                        this.setState({dataSource:this.state.goods})
+                      }
+                    }
+                  }
+                  totalPrice = totalPrice.toFixed(2)
+                  this.setState({cartNum,totalPrice});
+              }else{
+                Alert.alert(JSON.stringify(global.storageGoods))
               }
-              if(!add){
-            
-                
+            })
+          }else{
+            global.storage.load({
+              key: 'goods',
+              // syncInBackground(默认为true)意味着如果数据过期，
+              // 在调用sync方法的同时先返回已经过期的数据。
+              // 设置为false的话，则等待sync方法提供的最新数据(当然会需要更多时间)。
+              syncInBackground: true,
+              // 你还可以给sync方法传递额外的参数
+              syncParams: {
+              extraFetchOptions: {
+              // 各种参数
+              },
+               someFlag: true,
+              },
+            }).then(ret => {
+              let data=ret
+              let num=0
+              let totalPrice=0
+              setTimeout(() => {
+                if (!global.goods) { 
+                  global.goods = [];
+                }
                 for(let i=0;i<this.state.goods.length;i++){
-                  for(j=0;j<global.goods.length;j++){
-                    if(this.state.goods[i].id==global.goods[j].goodId){
-                      this.state.goods[i].num=1
-                      this.setState({dataSource:this.state.goods})
+                  for (j = 0; j < data.length; j++){
+                    if (this.state.goods[i].id == data[j].id) {
+                      global.goods.push({ count:data[j].count, goodId:data[j].id, goodSpecId:data[j].goodspecifications })
+                      this.state.goods[i].num = 1;
+                      this.setState({ dataSource: this.state.goods });
                     }
                   }
                 }
-                totalPrice = totalPrice.toFixed(2)
-                this.setState({cartNum,totalPrice});
+              },500)
+              for(let i=0;i<data.length;i++){
+                num+=Number(data[i].count)
+                let price=data[i].count*data[i].price
+                totalPrice+=price
               }
-              console.log(global.goods)
-            }else{
-              Alert.alert(JSON.stringify(global.storageGoods))
-            }
-          })
-        }else{
-          global.storage.load({
-            key: 'goods',
-            // syncInBackground(默认为true)意味着如果数据过期，
-            // 在调用sync方法的同时先返回已经过期的数据。
-            // 设置为false的话，则等待sync方法提供的最新数据(当然会需要更多时间)。
-            syncInBackground: true,
-            
-            // 你还可以给sync方法传递额外的参数
-            syncParams: {
-            extraFetchOptions: {
-            // 各种参数
-            },
-             someFlag: true,
-            },
-          }).then(ret => {
-            let data=ret
-            let num=0
-            let totalPrice=0
-            setTimeout(()=>{
-              for(let i=0;i<this.state.goods.length;i++){
-                for(j=0;j<data.length;j++){
-                  if(this.state.goods[i].id==data[j].id){
-                    this.state.goods[i].num=1
-                    this.setState({dataSource:this.state.goods})
-                  }
+              totalPrice=totalPrice.toFixed(2)
+              this.setState({totalPrice: totalPrice,cartNum: num})
+            }).catch(err => {
+              console.warn(err.message);
+              switch (err.name) {
+                  case 'NotFoundError':
+                      // TODO;
+                      break;
+                    case 'ExpiredError':
+                        // TODO
+                        break;
+              }
+            })
+          }
+        });
+  }
+  setModalVisible(visible) {
+    this.setState({modalVisible: visible});
+  }
+  _renderRow(data,index) {
+    return (
+      <View style={styles.goods}>
+        <Image style={styles.goodsImg} resizeMode={'stretch'} source={{uri:data.img}}></Image>
+        <View><Text style={styles.goodsName} numberOfLines={1}>{data.name}</Text></View>
+        <View><Text style={styles.goodsSpecifications} numberOfLines={1}>规格：{data.specs}</Text></View>
+        <View style={styles.goodsPriceWrap}>
+          <Text style={styles.goodsPriceSymbol}>¥</Text><Text style={styles.goodsPriceNumber}>{data.price}</Text>
+          <TouchableOpacity onPress={() => {
+            //点击是显示load加载
+            this.setState({ visible: true})
+            for (i=0;i<this.state.dataSource.length;i++) {
+              if (i==index) {
+                let good=this.state.dataSource[i]
+                let params={
+                  id: good.id,
+                  count: 1,
+                  img: good.img,
+                  goodName: good.name,
+                  goodspecifications: good.specsId,
+                  price: good.price
+                }
+                Cookie.get(global.url).then((cookie) => {
+                  if (!!cookie && !!cookie.userId) {
+                    fetch(global.url+'/API/ProductDetail/joinCart','post',params,(responseData)=>{
+                      if (responseData.success) {
+                        // this.getGoodsList("add")
+                        //数据好了加载load取消
+                        let index1 = -1
+                        for (let i = 0; i < global.goods.length; i++) {
+                          if (global.goods[i].goodId === params.id) {
+                            index1 = i
+                          }
+                        }
+                        if (index1 >= 0) {
+                          global.goods[index1].count+=1
+                        } else { 
+                          global.goods.push({goodSpecId:params.goodspecifications,count:params.count,goodId:params.id})
+                        }
+                        this.state.dataSource[index].num=1
+                        let cartNum = ++this.state.cartNum
+                        DeviceEventEmitter.emit('num', cartNum);
+                        this.state.totalPrice=this.state.dataSource[index].price+parseFloat(this.state.totalPrice)
+                        let totalPrice=this.state.totalPrice.toFixed(2)
+                        this.setState({cartNum,totalPrice,dataSource:this.state.dataSource,goods:this.state.dataSource,num:responseData.cartNum,visible: false})
+                     }
+                    }, (err) => { 
+                      console.log(err)
+                    })
+                    this.state.getNum()
+                  } else {
+                    //数据好了加载load取消
+                    if (!global.goods) { 
+                       global.goods=[]
+                    }
+                    this.state.dataSource[index].num=1
+                    this.setState({dataSource:this.state.dataSource})
+                    global.storage.load({
+                    key: 'goods',
+                    // syncInBackground(默认为true)意味着如果数据过期，
+                    // 在调用sync方法的同时先返回已经过期的数据。
+                    // 设置为false的话，则等待sync方法提供的最新数据(当然会需要更多时间)。
+                    syncInBackground: true,
+                    // 你还可以给sync方法传递额外的参数
+                    syncParams: {
+                    extraFetchOptions: {
+                    // 各种参数
+                    },
+                    someFlag: true,
+                    },
+                    }).then(ret => {
+                      if (!global.goods) { 
+                        global.goods = []
+                      }
+                        let data=[]
+                        let index=-1
+                        for (let i = 0;i < ret.length;i++) {
+                          if (ret[i].id == params.id) {
+                            index = i
+                          }
+                        }
+                        if (index>=0) {
+                          ret[index].count++
+                          ret[index].img=params.img
+                          data=ret
+                        } else {
+                          data = ret
+                          global.goods.push({goodSpecId:params.goodspecifications,count:params.count,goodId:params.id,})
+                          data.push(params)
+                        }
+                        let num=0
+                        let totalPrice=0
+                        for (let i=0;i<data.length;i++) {
+                          num+=Number(data[i].count)
+                          let price=data[i].count*data[i].price
+                          totalPrice+=price
+                        }
+                        DeviceEventEmitter.emit('num', num);
+                        totalPrice=totalPrice.toFixed(2)
+                        this.setState({totalPrice: totalPrice,cartNum: num,visible: false})
+                        global.storage.save({
+                          key: 'goods',  // 注意:请不要在key中使用_下划线符号!
+                          data: data
+                        });
+                      }).catch(err => {
+                        console.warn(err.message);
+                      })
+                      let That=this
+                      global.storage.sync = {
+                        goods() {
+                          //数据好了加载load取消
+                          let data=[]
+                          let num=0
+                          let totalPrice = 0
+                          if (!global.goods) { 
+                            global.goods=[]
+                          }
+                          global.goods.push({goodSpecId:params.goodspecifications,count:params.count,goodId:params.id,}) 
+                          data.push(params)
+                          totalPrice += params.price
+                          num += Number(params.count)
+                          DeviceEventEmitter.emit('num', num);
+                          That.setState({totalPrice: totalPrice, cartNum: num,visible: false})
+                          // this.setState({totalPrice: params.price,cartNum: params.count})
+                          global.storage.save({
+                            key: 'goods',  // 注意:请不要在key中使用_下划线符号!
+                            data: data
+                          });
+                        }
+                      }
+                                //     this.getGoodsList()
+                    }
+                  });
                 }
               }
-            },500)
-            for(let i=0;i<data.length;i++){
-              num+=Number(data[i].count)
-              let price=data[i].count*data[i].price
-              totalPrice+=price
-            }
-            totalPrice=totalPrice.toFixed(2)
-            this.setState({totalPrice: totalPrice,cartNum: num})
-          }).catch(err => {
-            console.warn(err.message);
-            switch (err.name) {
-                case 'NotFoundError':
-                    // TODO;
-                    break;
-                  case 'ExpiredError':
-                      // TODO
-                      break;
-            }
-          })
-        }
-      },500)
-      });
-      
-    }
-    setModalVisible(visible) {
-        this.setState({modalVisible: visible});
-    }
-    _renderRow(data,index) {
-        return (
-          <View style={styles.goods}>
-                   <Image style={styles.goodsImg} resizeMode={'stretch'} source={{uri:data.img}}></Image>
-                   <View><Text style={styles.goodsName} numberOfLines={1}>{data.name}</Text></View>
-                   <View><Text style={styles.goodsSpecifications}>规格：{data.specs}</Text></View>
-                   <View style={styles.goodsPriceWrap}>
-                     <Text style={styles.goodsPriceSymbol}>¥</Text><Text style={styles.goodsPriceNumber}>{data.price}</Text>
-              <TouchableOpacity onPress={() => {
-                         for (i=0;i<this.state.dataSource.length;i++) {
-                            if (i==index) {
-                                let good=this.state.dataSource[i]
-                                let params={
-                                  id: good.id,
-                                  count: 1,
-                                  img: good.img,
-                                  goodName: good.name,
-                                  goodspecifications: good.specsId,
-                                  price: good.price
-                              }
-                              Cookie.get(global.url).then((cookie) => {
-                                
-                                if (!!cookie && !!cookie.userId) {
-                                  console.log(params)
-                                    fetch(global.url+'/API/ProductDetail/joinCart','post',params,(responseData)=>{
-                                      // this.state.dataSource[index].num=1
-                                      // this.setState({dataSource:this.state.dataSource})
-                                      console.log(responseData)
-                                      if(responseData.success){
-                                        this.getGoodsList("add")
-                                        this.state.dataSource[index].num=1
-                                        let cartNum = ++this.state.cartNum
-                                        DeviceEventEmitter.emit('num', cartNum);
-                                        this.state.totalPrice=this.state.dataSource[index].price+parseFloat(this.state.totalPrice)
-                                        let totalPrice=this.state.totalPrice.toFixed(2)
-                                        this.setState({cartNum,totalPrice,dataSource:this.state.dataSource,goods:this.state.dataSource,num:responseData.cartNum})
-                                      }
-                                        
-                                        // Alert.alert(JSON.stringify(responseData))
-                                    }, (err) => { 
-                                        console.log(err)
-                                    })
-                            
-                                    this.state.getNum()
-                                  }else{
-                                    console.log(this.state.dataSource[index])
-                                    // Alert.alert(JSON.stringify(this.state.dataSource[index]))
-                                    this.state.dataSource[index].num=1
-                                    this.setState({dataSource:this.state.dataSource})
-                                    global.storage.load({
-                                      key: 'goods',
-                                      // syncInBackground(默认为true)意味着如果数据过期，
-                                      // 在调用sync方法的同时先返回已经过期的数据。
-                                      // 设置为false的话，则等待sync方法提供的最新数据(当然会需要更多时间)。
-                                      syncInBackground: true,
-                                      
-                                      // 你还可以给sync方法传递额外的参数
-                                      syncParams: {
-                                      extraFetchOptions: {
-                                      // 各种参数
-                                      },
-                                       someFlag: true,
-                                      },
-                                    }).then(ret => {
-                                      let data=[]
-                                      let index=-1
-                                      for(let i = 0;i < ret.length;i++){
-                                        if(ret[i].id==params.id){
-                                          index=i
-                                        }
-                                      }
-                                      if(index>=0){
-                                        ret[index].count++
-                                        ret[index].img=params.img
-                                        data=ret
-                                      }else{
-                                        data=ret
-                                        data.push(params)
-                                      }
-                                      let num=0
-                                      let totalPrice=0
-                                      for(let i=0;i<data.length;i++){
-                                        num+=Number(data[i].count)
-                                        let price=data[i].count*data[i].price
-                                        totalPrice+=price
-                                      }
-                                      DeviceEventEmitter.emit('num', num);
-                                      totalPrice=totalPrice.toFixed(2)
-                                      this.setState({totalPrice: totalPrice,cartNum: num})
-                                      global.storage.save({
-                                        key: 'goods',  // 注意:请不要在key中使用_下划线符号!
-                                        data: data
-                                      });
-                                    }).catch(err => {
-                                      console.warn(err.message);
-                                    })
-                                    let That=this
-                                  global.storage.sync = {
-                                    goods(){
-                                      let data=[]
-                                      let num=0
-                                      let totalPrice=0
-                                      data.push(params)
-                                      totalPrice += params.price
-                                      num += Number(params.count)
-                                      DeviceEventEmitter.emit('num', num);
-                                      That.setState({totalPrice: totalPrice, cartNum: num})
-                                      // this.setState({totalPrice: params.price,cartNum: params.count})
-                                      global.storage.save({
-                                        key: 'goods',  // 注意:请不要在key中使用_下划线符号!
-                                        data: data
-                                      });
-                                    }
-                                  }
-                                //     this.getGoodsList()
-                                  }
-                                });
-                            }
-                          
-                         }
-                         var newData = JSON.parse(JSON.stringify(this.state.dataSource));
-                         this.setState({dataSource:newData})
-                     }} style={data.num===0?styles.goodsPriceAdd:styles.goodsPriceAddActive}><Image style={styles.goodsPriceAddImg} resizeMode={'stretch'} source={data.num===0?require('../images/add.png'):require('../images/add1.png')}></Image></TouchableOpacity>
-                   </View>
+              var newData = JSON.parse(JSON.stringify(this.state.dataSource));
+              this.setState({dataSource:newData})
+            }} style={data.num===0?styles.goodsPriceAdd:styles.goodsPriceAddActive}><Image style={styles.goodsPriceAddImg} resizeMode={'stretch'} source={data.num===0?require('../images/add.png'):require('../images/add1.png')}></Image></TouchableOpacity>
           </View>
-        );
+        </View>
+      );
+  }
+  //分页
+  _contentViewScroll(e: Object) {
+    if(this.state.dataSource.length>0&&this.state.isNextSuccess!=0){
+      clearTimeout(this.state.timer)
+      this.setState({isLoad:true,params2:this.state.params1})
+      this.state.timer = setTimeout(() => {
+        this.state.params1.pageIndex++
+        this.setState({params1:this.state.params1,isNextSuccess:0})
+        this.getGoodsList('page')
+      },1000)
     }
-    _contentViewScroll(e:Object){
-      if(this.state.dataSource.length>0&&this.state.isNextSuccess!=0){
-        clearTimeout(this.state.timer)
-        this.setState({isLoad:true})
-          this.state.timer=setTimeout(()=>{
-              this.state.params1.pageIndex++
-              this.setState({params1:this.state.params1,isNextSuccess:0})
-              this.getGoodsList()
-          },1000)
-      }
-     }
-     _onPressSearch(){
-      this.state.params1.keyword=this.state.goodname
-      this.state.params1.pageIndex=0
-      this.setState({params1:this.state.params1,goods:[]})
-      fetch(this.state.url,'post',this.state.params1,(responseData)=>{
-        if(responseData.data.goods.length==0){
-          this.setState({isLoad:false})
-          return
-        }
-        for(var i=0;i<responseData.data.goods.length;i++){
-          var good=responseData.data.goods[i]
-          let specs=''
-          if (good.specs.length>1) {
-              specs = '多规格'
-          } else {
-              specs = good.specs[0].spec
-          }
-          let specsId = ''
-          if (good.specs.length==1) {
-            specsId = good.specs[0].id
-          } 
-          let num=0
-          if(this.state.alrGoods){
-            for(let i=0;i<this.state.alrGoods.length;i++){
-              if(good.id==this.state.alrGoods[i].id){
-                num=this.state.alrGoods[i]
-              }
-            }
-          }
-          this.state.goods.push({id: good.id,
-            img: good.goodImg.split('|')[0],
-            name: good.goodName,
-            price: good.price,
-            specs: specs,
-            specsId: specsId,
-            num: num})
-        }
-        console.log(this.state.goods,responseData)
-        this.setState({dataSource:this.state.goods,isLoad:false,isNextSuccess:1});
-      })
-     }
-     
+  }
+  _onPressSearch() {
+    this.state.params1.keyword = this.state.goodname
+    this.state.params1.pageIndex=0
+    this.setState({ params1: this.state.params1, goods: [] })
+    this.getGoodsList('search')
+  }
     render(){
-      const { navigate,goBack } = this.props.navigation;
+      const { navigate, goBack } = this.props.navigation;
+      const { params } = this.props.navigation.state;
         return(
-            <View style={{height: '100%'}}>
+          <View style={{ height: '100%' }}>
+            <Spinner visible={this.state.visible} color="#e6e6e6"  />
               <ImageBackground style={styles.search} source={require('../images/headerBg.jpg')}>
-                <TouchableOpacity style={{height:'100%',justifyContent:"center"}} onPress={() => goBack()}>
+              <TouchableOpacity style={{ height: '100%', justifyContent: "center" }} onPress={() => {
+                if (global.isSearch) { 
+                  params.Back()
+                }
+                goBack()
+              }}>
                   <Image style={styles.searchBack} source={require('../images/back1.png')}></Image>
                 </TouchableOpacity>
                 <TextInput
                     onChangeText={(text) => {
                       this.setState({goodname:text})
                     }}
-                    returnKeyType={"search"}
+                    defaultValue={this.state.indexSeach} 
+                    keyboardType={"search"}
                     onEndEditing={this._onPressSearch.bind(this)}
                     style={styles.searchInput}
                     underlineColorAndroid={'transparent'}
                     placeholder={'输入关键字直接搜索'}
                     placeholderTextColor={'#a6a6a6'}
                  />
-                {/* <TouchableOpacity onPress={()=>{
-                  this.state.params1.keyword=this.state.goodname
-                  this.setState({params1:this.state.params1})
-                  this.getGoodsList()
-                }}> <Image style={styles.searchImg} source={require('../images/search.png')}></Image></TouchableOpacity> */}
                 <TouchableOpacity  style={{height:'100%',width: pxToDp(50),justifyContent:"center",position: 'relative',zIndex: 100,left: pxToDp(-80)}} onPress={this._onPressSearch.bind(this)}>
                   <Image style={styles.searchImg} source={require('../images/search.png')}></Image>
                 </TouchableOpacity>
               </ImageBackground>
-              {/* <SectionList
-                  // stickySectionHeadersEnabled={true}
-                  onEndReached={()=>{this._contentViewScroll()}}
-                  // refreshing={true}
-                  onEndReachedThreshold={0}
-                  contentContainerStyle={styles.listWrap}
-                  renderItem={({item}) => this._renderRow(item)}
-                  ListFooterComponent={()=><View style={this.state.isLoad?styles.more:styles.hidden}><Text style={styles.moreText}>加载更多</Text><Image source={require('../images/load.gif')}></Image></View>}
-                  sections={this.state.dataSource}
-                /> */}
-                <FlatList
-                  contentContainerStyle={styles.listWrap}
-                  horizontal={false}
-                  numColumns={2}
-                  refreshing={true}
-                  removeClippedSubviews={false}
-                  data={this.state.dataSource}
-                  extraData={this.state}
-                  renderItem={({item,index}) => this._renderRow(item,index)}
-                  ListFooterComponent={()=><View style={this.state.isLoad?styles.more:styles.hidden}><Text style={styles.moreText}>加载中</Text></View>}
-                  onEndReached={this._contentViewScroll.bind(this)}
-                  onEndReachedThreshold={0}
-                  getItemLayout={(data, index) => ( {length: pxToDp(550), offset: pxToDp(550) * index, index} )}
-              />
+                {
+                  this.state.length === 0 ?
+                  <View style={styles.noFindWrap}>
+                    <View>
+                      <Image style={styles.noFindImg} source={require('../images/seachGoods.png')}></Image>
+                    </View>
+                    <View>
+                      <Text style={styles.noFindTitle}>没有找到搜索结果</Text>
+                    </View>
+                    <View>
+                      <Text>换个关键字再搜一遍</Text>
+                    </View>  
+                  </View> :
+                  <FlatList
+                    contentContainerStyle={styles.listWrap}
+                    horizontal={false}
+                    numColumns={2}
+                    refreshing={true}
+                    removeClippedSubviews={false}
+                    data={this.state.dataSource}
+                    extraData={this.state}
+                    renderItem={({ item, index }) => this._renderRow(item, index)}
+                    ListFooterComponent={() => <View style={this.state.isLoad ? styles.more : styles.hidden}><Text style={styles.moreText}>加载中</Text></View>}
+                    onEndReached={this._contentViewScroll.bind(this)}
+                    onEndReachedThreshold={0.1}
+                    getItemLayout={(data, index) => ({ length: pxToDp(550), offset: pxToDp(550) * index, index })}
+                  />
+                }
                {this.state.dataSource.length!=0?<View style={styles.settlementColumn}>
                   <TouchableOpacity style={styles.shoppingCartWrap} onPress={() => navigate('Home',{page: 'shoppingCart'})} ><Image style={styles.shoppingCart} source={require('../images/goodsIncart.png')}></Image></TouchableOpacity>
                   <View style={this.state.cartNum<100?styles.badgeWrap:styles.badgeWrap1}><Text style={styles.badge}>{this.state.cartNum?this.state.cartNum:0}</Text></View>
                   <View style={styles.goPayWrap}>
                     <Text style={styles.goPayTotalPrice}>合计：</Text><Text style={styles.goPayTotalPriceSymbol}>¥</Text><Text style={styles.totalPrice}>{this.state.totalPrice?this.state.totalPrice:0}</Text><TouchableOpacity style={this.state.totalPrice>1?styles.settlement:styles.settlement1} disabled={this.state.totalPrice>1?false:true} onPress={() => 
                       Cookie.get(global.url).then((cookie) => {
-                        if(cookie&&!!cookie.userId){
+                    if (cookie && !!cookie.userId) {
                           navigate('Order')
-                        }else{
+                    } else {
+                          //存储跳转的位置
+                          global.navigate = "Goods"
+                          global.keyword=this.state.goodname
                           navigate('Login')
                          }
                       })
@@ -596,8 +613,8 @@ const styles = StyleSheet.create({
     goodsPriceAdd: {
       position: 'absolute',
       right: pxToDp(20),
-      width: pxToDp(40),
-      height: pxToDp(40),
+      width: pxToDp(50),
+      height: pxToDp(50),
       textAlignVertical:'center',
       textAlign: 'center',
       borderRadius: 36,
@@ -614,8 +631,8 @@ const styles = StyleSheet.create({
     goodsPriceAddActive: {
       position: 'absolute',
       right: pxToDp(20),
-      width: pxToDp(40),
-      height: pxToDp(40),
+      width: pxToDp(50),
+      height: pxToDp(50),
       textAlignVertical:'center',
       textAlign: 'center',
       borderRadius: 36,
@@ -931,6 +948,21 @@ const styles = StyleSheet.create({
       textAlign: 'center',
       textAlignVertical: 'center',
       backgroundColor:'#ff8e00'
-    }
+  },
+  noFindWrap: {
+    flex: 1,
+    alignItems: 'center'
+  },
+  noFindImg: {
+    width: pxToDp(350),
+    height: pxToDp(300),
+    marginTop: pxToDp(130)
+  },
+  noFindTitle: {
+    fontSize: pxToDp(40),
+    marginTop: pxToDp(30),
+    marginBottom: pxToDp(20),
+  }
+  
 });
 module.exports=Goods 

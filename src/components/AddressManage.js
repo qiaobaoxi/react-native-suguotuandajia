@@ -36,13 +36,18 @@ class Index extends Component{
             <View style={{flex: 1}}>
                 <Header goBack={goBack} text={'地址管理'}></Header>
                 <WebView
-                        style={{
-                            backgroundColor: "#e5e5e5",
-                            height: 100,
-                        }}
-                        source={
-                            {uri: global.url+'/web/addressManage.html'}
-                    }
+                  style = {{
+                    backgroundColor: "#e5e5e5",
+                    height: 100,
+                    }}
+                    userAgent='TDJAPP'
+                    startInLoadingState={true}
+                    renderError={() => {
+                        return (<View style={styles.container}><Text>网络出错,请联系客服</Text></View>)
+                    }}
+                  source={
+                    {uri: global.url+'/web/addressManage.html'}
+                  }
                 />
             </View>
         );

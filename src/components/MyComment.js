@@ -34,10 +34,14 @@ class Index extends Component{
         
         return(
             <WebView
-                      style={{
-                        backgroundColor: "#e5e5e5",
-                        height: 100,
-                      }}
+                style={{
+                    backgroundColor: "#e5e5e5",
+                    height: 100,
+                }}
+                startInLoadingState={true}
+                renderError={() => {
+                    return (<View style={styles.container}><Text>网络出错,请联系客服</Text></View>)
+                }}
                       source={
                         {uri:global.url+'/web/my/myComment.html'}
                  }

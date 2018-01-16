@@ -32,6 +32,7 @@ import SplashScreen from 'react-native-splash-screen'
 import Index from './src/components/Index';
 import About from './src/components/About';
 import EnterpriseAccount from './src/components/EnterpriseAccount';
+import CustomerService from './src/components/CustomerService';
 import Cart from './src/components/Cart';
 import Addresses from './src/components/Addresses';
 import Qrcode from './src/components/Qrcode';
@@ -67,9 +68,10 @@ var storage = new Storage({
   enableCache: true,
 })  
 global.storage = storage;
+global.navigate= ''
 const deviceWidthDp = Dimensions.get('window').width;
 const uiWidthPx = 750;
-global.url='http://dalv.ipet66.com'
+global.url='http://tdj.hpbb.me'
 // global.storage.remove({
 //   key: 'goods'
 // });
@@ -83,7 +85,7 @@ function pxToDp(uiElementPx) {
 class HomeScreen extends Component<{}> {
   componentDidMount() {
       SplashScreen.hide();
-    this.subscription = DeviceEventEmitter.addListener('num', (num) => {
+      this.subscription = DeviceEventEmitter.addListener('num', (num) => {
            this.setState({num:num})
       })
   }
@@ -432,6 +434,17 @@ class MyCouponSuccessScreen extends React.Component {
     );
   }
 }
+//客服
+class CustomerServiceScreen extends React.Component {
+  static navigationOptions = {
+    header:null
+  };
+  render() {
+    return (
+      <CustomerService navigation={this.props.navigation} />
+    );
+  }
+}
 class MyInfoSuccessScreen extends React.Component {
   static navigationOptions = {
     header:null
@@ -560,6 +573,7 @@ const styles = StyleSheet.create({
 });
 const RootNavigator = StackNavigator({
   // Login: { screen: LoginScreen },
+  
   Home: {
     screen: HomeScreen,
   },
@@ -588,6 +602,7 @@ const RootNavigator = StackNavigator({
   MyInfo: { screen: MyInfoSuccessScreen },
   AddressManage: { screen: AddressManageSuccessScreen },
   EnterpriseAccount: { screen: EnterpriseAccountScreen },
+  CustomerService: { screen: CustomerServiceScreen }, 
 });
 export default class App extends React.Component {
   render() {

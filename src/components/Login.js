@@ -14,11 +14,13 @@ import {
   TextInput,
   Button,
   TouchableOpacity,
-  StatusBar
+    StatusBar,
+    DeviceEventEmitter
 } from 'react-native';
 import fetch from '../js/fetch'
 import Cookie from 'react-native-cookie';
 import Header from '../js/header'
+import AwesomeAlert from 'react-native-awesome-alerts';
 const deviceWidthDp = Dimensions.get('window').width;
 
 const uiWidthPx = 750;
@@ -29,17 +31,38 @@ function pxToDp(uiElementPx) {
 class Login extends Component{
     constructor(props) {
         super(props);
-        this.state={tel: '',code: '',disabled: true,codeDisabled: true,getCodeText: '获取验证码'}
+        this.state = {
+            tel: '',
+            code: '',
+            disabled: true,
+            codeDisabled: true,
+            getCodeText: '获取验证码',
+            showAlert: false,
+            warmmsg:''
+        }
     }
+    showAlert = () => {
+        this.setState({
+          showAlert: true
+        });
+    };
+    hideAlert = () => {
+        this.setState({
+          showAlert: false
+        });
+      };
+    
     //点击登录
-    submit(){
-        const { navigate } = this.props.navigation;
-        let params={
+    submit() {
+        let that=this
+        const { navigate, goBack } = this.props.navigation;
+        const { params } = this.props.navigation.state;
+        let params1 = {
             mobileNo: this.state.tel,
             smsCode: this.state.code
         }
         //登录获取
-        fetch(global.url+'/api/user/UserLogin','post',params,(responseData)=>{
+        fetch(global.url+'/api/user/UserLogin','post',params1,(responseData)=>{
             if (responseData.result) {
                 //没有登录的情况下存储商品要给后台
                 global.storage.load({
@@ -57,18 +80,40 @@ class Login extends Component{
                     },
                 }).then(ret => {
                     let data = ret
-                    for(let i=0;i<data.length;i++){
-                        fetch(global.url+'/API/ProductDetail/joinCart','post',data[i],(responseData)=>{
-                            // this.setState({num:responseData.cartNum})
-                            // Alert.alert(JSON.stringify(responseData))
+                    for (let i = 0; i < data.length; i++){
+                        if (!global.goods) { 
+                            global.goods=[]  
+                        }
+                        global.goods[i]={goodSpecId:data[i].goodSpecId,count:data[i].count,goodId:data[i].goodId}
+                        fetch(global.url + '/API/ProductDetail/joinCart', 'post', data[i], (responseData) => {
+                            global.storage.remove({
+                                key: 'goods'
+                            });
+                            Cookie.get(global.url).then((cookie) => {
+                                if (cookie && !!cookie.userId) {
+                                    //存储cookie
+                                    global.storage.save({
+                                        key: 'Cookie',  // 注意:请不要在key中使用_下划线符号!
+                                        data: cookie.userId
+                                    });
+                                    //跳到首页
+                                    if (!!global.navigate) {
+                                        DeviceEventEmitter.emit('goodNum', '11');
+                                        global.navigate = '';
+                                        global.keyword = '';
+                                        goBack();
+                                    } else { 
+                                        navigate('Home')
+                                    }
+                                } else { 
+                                    Alert.alert('没有获取到用户信息')
+                                }
+                            });
                         }, (err)=>{ 
                             Alert.alert('加入购物车失败')
                             return 
-                        })
+                            })
                     }
-                    global.storage.remove({
-                        key: 'goods'
-                    });
                 }).catch(err => {
                     console.warn(err.message);
                     switch (err.name) {
@@ -79,23 +124,35 @@ class Login extends Component{
                               // TODO
                               break;
                     }
-                })
-                Cookie.get(global.url).then((cookie) => {
-                    console.log(cookie)
-                    if (cookie && !!cookie.userId) {
-                        //存储cookie
-                        global.storage.save({
-                            key: 'Cookie',  // 注意:请不要在key中使用_下划线符号!
-                            data: cookie.userId
+                    })
+                    global.storage.sync = {
+                        goods() {
+                          //数据好了加载load取消
+                          Cookie.get(global.url).then((cookie) => {
+                            if (cookie && !!cookie.userId) {
+                                //存储cookie
+                                global.storage.save({
+                                    key: 'Cookie',  // 注意:请不要在key中使用_下划线符号!
+                                    data: cookie.userId
+                                });
+                                //跳到首页
+                                if (!!global.navigate) {
+                                    DeviceEventEmitter.emit('goodNum', '11');
+                                    global.navigate = '';
+                                    global.keyword = '';
+                                    goBack();
+                                } else { 
+                                    navigate('Home')
+                                }
+                            } else { 
+                                Alert.alert('没有获取到用户信息')
+                            }
                         });
-                        //跳到首页
-                        navigate('Home')
-                    } else { 
-                        Alert.alert('用户不存在')
-                    }
-                });
-            }else{
-                Alert.alert(responseData.errMsg)
+                        }
+                      }
+            } else {
+                that.setState({warmmsg:responseData.errMsg})
+                that.showAlert()
             }
         },(error)=>{
           console.log(error)
@@ -136,7 +193,8 @@ class Login extends Component{
            }
         },1000)
     }
-    render(){
+    render() {
+        const {showAlert} = this.state;
         const { navigate,goBack } = this.props.navigation;
         return(
             <View style={{backgroundColor:'white',height: '100%'}}>
@@ -166,6 +224,20 @@ class Login extends Component{
                         <Text style={styles.submitText}>登录</Text>
                     </TouchableOpacity>
                 </View>
+                <AwesomeAlert
+                    show={showAlert}
+                    showProgress={false}
+                    title=""
+                    message={this.state.warmmsg}
+                    closeOnTouchOutside={true}
+                    closeOnHardwareBackPress={false}
+                    showConfirmButton={true}
+                    confirmText="知道了"
+                    confirmButtonColor="#DD6B55"
+                    onConfirmPressed={() => {
+                        this.hideAlert();
+                    }}
+                />
             </View>    
         );
     }
@@ -203,7 +275,7 @@ const styles = StyleSheet.create({
     logoImg: {
         marginTop: pxToDp(108),
         marginBottom: pxToDp(52),
-        width: pxToDp(247),
+        width: pxToDp(264),
         height: pxToDp(148),
     },
     input: {

@@ -23,7 +23,8 @@ import {
   TouchableOpacity,
   Alert,
   ListView,
-  StatusBar
+  StatusBar,
+  Animated
 } from 'react-native';
 import Cookie from 'react-native-cookie';
 import Fetch from '../js/fetch'
@@ -54,12 +55,65 @@ class Index extends Component{
           active: 0,
           dataSource: type1.cloneWithRows([]),
           type2:type2.cloneWithRows([]),
-          searchText: ''
-        };
+            searchText: '',
+      };
+       global.isSearch=0
         //初始化菜单链接
         let url = global.url + '/API/home/initSgHome'
         //初始化菜单
-        Fetch(url,'post','',(responseData)=>{
+      Fetch(global.url+'/api/home/getInitData', 'post', '', (responseData) => {
+          // let menu1=[]
+          // for(let i=0;i<responseData.data.length;i++){
+          //   if (i == 0) {
+          //     //添加1级菜单的第一个
+          //     menu1.push({id:responseData.data[i].id,Text:responseData.data[i].name,isActive:true})
+          //     //一上来展示二级菜单
+          //     this.menu2(i, responseData.data)
+          //   } else {
+          //     //添加其他1级菜单
+          //     menu1.push({id:responseData.data[i].id,Text:responseData.data[i].name,isActive:false})
+          //     // this.menu2(i,responseData.data)
+          //   }     
+          // }
+          global.storage.load({
+            key: 'alert1',
+            // syncInBackground(默认为true)意味着如果数据过期，
+            // 在调用sync方法的同时先返回已经过期的数据。
+            // 设置为false的话，则等待sync方法提供的最新数据(当然会需要更多时间)。
+            syncInBackground: true,
+            
+            // 你还可以给sync方法传递额外的参数
+            syncParams: {
+            extraFetchOptions: {
+            // 各种参数
+            },
+          someFlag: true,
+            },
+          }).then(ret => {
+          }).catch(err => {
+          switch (err.name) {
+            case 'NotFoundError':
+                  break;
+                case 'ExpiredError':
+                    // TODO
+                    break;
+          }
+          })
+          global.storage.sync = {
+            alert1() {
+              //数据好了加载load取消
+              global.storage.save({
+                key: 'alert1',  // 注意:请不要在key中使用_下划线符号!
+                data: '111'
+              });
+              Alert.alert(responseData.notify.text)
+            }
+          }
+          
+          this.setState({notify:responseData.notify.text})
+        })
+      Fetch(url, 'post', '', (responseData) => {
+          console.log(responseData)
           let menu1=[]
           for(let i=0;i<responseData.data.length;i++){
             if (i == 0) {
@@ -110,7 +164,7 @@ class Index extends Component{
         <View style={styles.goods3body}>
           <TouchableOpacity onPress={() =>
             navigate('Goods', {
-              id: data.id
+              goodname: data.name
             })
           }>
             <View style={styles.goods3bodyEach}>
@@ -122,9 +176,15 @@ class Index extends Component{
       );
     }
     //搜索产品
-    _onPressSearch(event){
+    _onPressSearch(event) {
       const { navigate } = this.props.navigation;
-      navigate('Goods',{goodname:this.state.searchText})
+        if (!global.isSearch) { 
+          navigate('Goods', { goodname: this.state.searchText ,Back:this.Back})
+          global.isSearch=1
+        }
+    }
+     Back() { 
+      global.isSearch=0
     }
     render(){
       const { navigate } = this.props.navigation;
@@ -133,6 +193,7 @@ class Index extends Component{
                 <StatusBar
                   barStyle="light-content"
                 />
+                
                 <View style={styles.header}>
                   <ImageBackground style={styles.headerSearch} source={require('../images/header.jpg')}>
                     <TouchableOpacity style={{paddingLeft:pxToDp(25)}}  onPress={() => {
@@ -159,13 +220,17 @@ class Index extends Component{
                           placeholder={'输入关键字直接搜索'}
                           placeholderTextColor={'#a6a6a6'}
                         />
-                        <TouchableOpacity style={styles.headerSearchImgWrap} onPress ={()=> navigate('Goods',{goodname:this.state.searchText})}><Image style={styles.headerSearchImg} source={require('../images/search.png')}></Image></TouchableOpacity>
+                  <TouchableOpacity style={styles.headerSearchImgWrap} onPress={() => {
+                    
+                    this._onPressSearch()
+                  }}><Image style={styles.headerSearchImg} source={require('../images/search.png')}></Image></TouchableOpacity>
                       </View>
-                      <TouchableOpacity style={styles.headerSearchMy} onPress={() => navigate('Store')}>
+                      <TouchableOpacity style={styles.headerSearchMy} onPress={() => navigate('CustomerService')}>
                         <Image style={styles.headerSearchMyImg} source={require('../images/customService.png')}></Image>
                         <Text  style={styles.headerSearchMyText}>客服</Text>
                       </TouchableOpacity>
-                  </ImageBackground>
+              </ImageBackground>
+              <View style={styles.warn}><Image style={styles.horn} source={require('../images/horn.png')}></Image><Text style={styles.warnText}>{this.state.notify}</Text></View>
                   <TouchableOpacity style={styles.headerFunction} onPress={()=>{
                     Cookie.get(global.url).then((cookie) => {
                       if(!cookie||!cookie.userId){
@@ -178,7 +243,9 @@ class Index extends Component{
                   }>
                     <Image style={styles.gorupBuy} source={require('../images/groupBuy.jpg')}></Image>
                   </TouchableOpacity>
-                </View>
+            </View>
+              <View>
+              </View>
                 <View style={styles.goodsWrap}>
                   <ScrollView style={styles.goods1} showsVerticalScrollIndicator={false}> 
                     <ListView 
@@ -187,7 +254,6 @@ class Index extends Component{
                     />
                   </ScrollView> 
                   <ScrollView style={styles.goods2} showsVerticalScrollIndicator={false}> 
-                      <Image resizeMode={'stretch'} style={styles.goods2Bnner} source={require('../images/banner.png')}></Image>
                       <ListView 
                           contentContainerStyle={styles.goods3}
                           dataSource={this.state.type2}
@@ -249,10 +315,12 @@ const styles = StyleSheet.create({
     padding:0,
     paddingLeft:pxToDp(36),
   },
-  headerSearchImgWrap:{
+  headerSearchImgWrap: {
     position:'absolute',
-    right:pxToDp(22),
-    top:pxToDp(8),
+    right:pxToDp(10),
+    top: pxToDp(8),
+    width: pxToDp(60),
+    height: pxToDp(60),
   },
   headerSearchImg: {
     width:pxToDp(38),
@@ -298,6 +366,24 @@ const styles = StyleSheet.create({
   goodsWrap: {
     flexDirection:'row',
     backgroundColor: '#f4f4f4'
+  },
+  warn: {
+    flexDirection: 'row',
+    height: pxToDp(66),
+    alignItems: 'center',
+    backgroundColor: '#fff7cc',
+    borderBottomWidth: pxToDp(1),
+    borderBottomColor: '#e9eae8'
+  },
+  warnText: {
+    color: '#fe7000',
+    fontSize: pxToDp(24)
+  },
+  horn: {
+    width: pxToDp(36),
+    height: pxToDp(34),
+    marginLeft: pxToDp(18),
+    marginRight: pxToDp(14)
   },
   goods1: {
     width: pxToDp(176),

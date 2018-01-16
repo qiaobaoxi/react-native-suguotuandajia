@@ -53,16 +53,21 @@ class Index extends Component{
               Cookie.set(global.url, 'userId', cookie.userId).then(() => console.log('success'));
           }
       })
+        let time=new Date().getTime()
         return(
            <View style={{flex:1}}>
-                        
             <Header goBack={goBack} text={'请选择送货地址'}></Header>
             <WebView
                 style={{
-                backgroundColor: "#e5e5e5",
-                height: 100,
+                  backgroundColor: "#e5e5e5",
+                  height: 100,
                 }}
-                source={{uri:global.url+'/web/paymentDelivery.html?123456'}
+                startInLoadingState={true}
+                userAgent='TDJAPP'
+                renderError={() => {
+                  return (<View style={styles.container}><Text>网络出错,请联系客服</Text></View>)
+                }}
+                source={{uri:global.url+'/web/paymentDelivery.html?sTime='+time}
               }
               userAgent="TDJAPP"
               onMessage={this.handleMessage.bind(this)}  

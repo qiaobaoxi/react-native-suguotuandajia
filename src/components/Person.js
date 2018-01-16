@@ -49,38 +49,39 @@ class NineBox extends React.Component{
             },
             isRefreshing:false
         }
+        this.loadData()
+    }
+    loadData() { 
         fetch(global.url+'/API/user/getUserCard?openid=','GET','',(responseData)=>{
-                 this.setState({happyCart:responseData.data.length});
-              })
-          fetch(global.url+'/API/user/getUserCouponNum?openid=','get','',(responseData)=>{
-                 this.setState({coupon:responseData.data[0].count});
-              })
-           fetch(global.url+'/API/user/getStateNum','get','',(responseData)=>{
-               if(responseData.success){
-                    this.setState({
-                        paymentDt:responseData.data.paymentDt,
-                        shipmentDt:responseData.data.shipmentDt,
-                        goodsReceiptDt:responseData.data.goodsReceiptDt,
-                        commentDt:responseData.data.commentDt,
-                        returnReject:responseData.data.returnReject
-                    })
-               }else{
-                   console.error(responseData.message)
-               }
-              })
-              fetch(global.url+'/api/home/getInitData','GET','',(responseData)=>{
-                  this.setState({dataSource:responseData});
-              },(error)=>{
-              })
-      this.getCookie()
-      Cookie.get(global.url).then((cookie) => {
-          let IsLogin=0
+            this.setState({happyCart:responseData.data.length});
+         })
+        fetch(global.url+'/API/user/getUserCouponNum?openid=','get','',(responseData)=>{
+                this.setState({coupon:responseData.data[0].count});
+            })
+        fetch(global.url+'/API/user/getStateNum','get','',(responseData)=>{
+            if(responseData.success){
+                this.setState({
+                    paymentDt:responseData.data.paymentDt,
+                    shipmentDt:responseData.data.shipmentDt,
+                    goodsReceiptDt:responseData.data.goodsReceiptDt,
+                    commentDt:responseData.data.commentDt,
+                    returnReject:responseData.data.returnReject
+                })
+            }else{
+            }
+        })
+        fetch(global.url+'/api/home/getInitData','GET','',(responseData)=>{
+                this.setState({dataSource:responseData});
+            },(error)=>{
+        })
+        this.getCookie()
+        Cookie.get(global.url).then((cookie) => {
+            let IsLogin=0
             if(cookie||cookie.userId){
                 IsLogin=1
             }
             this.setState({IsLogin})
-        }
-       )
+        })
     }
     setModalVisible(visible) {
         this.setState({modalVisible: visible});
@@ -93,6 +94,9 @@ class NineBox extends React.Component{
         //         navigate("Login")
         //     }
         // })
+    }
+    componentWillReceiveProps() { 
+        this.loadData()
     }
     goLogin(go,parems){
         const { navigate } = this.props.navigation;
@@ -119,15 +123,15 @@ class NineBox extends React.Component{
           // prepend 10 items
           fetch(global.url+'/API/user/getStateNum','get','',(responseData)=>{
             if(responseData.success){
-                 this.setState({
-                     paymentDt:responseData.data.paymentDt,
-                     shipmentDt:responseData.data.shipmentDt,
-                     goodsReceiptDt:responseData.data.goodsReceiptDt,
-                     commentDt:responseData.data.commentDt,
-                     returnReject:responseData.data.returnReject
-                 })
+                this.setState({
+                    paymentDt:responseData.data.paymentDt,
+                    shipmentDt:responseData.data.shipmentDt,
+                    goodsReceiptDt:responseData.data.goodsReceiptDt,
+                    commentDt:responseData.data.commentDt,
+                    returnReject:responseData.data.returnReject
+                })
             }else{
-                console.error(responseData.message)
+                // console.error(responseData.message)
             }
            })
             fetch(global.url+'/API/user/getUserCard?openid=','GET','',(responseData)=>{
@@ -151,8 +155,8 @@ class NineBox extends React.Component{
                   tintColor="#ff0000"
                   title="Loading..."
                   titleColor="#00ff00"
-                  colors={['#ff0000', '#00ff00', '#0000ff']}
-                  progressBackgroundColor="#ffff00"
+                  colors={['#f48722', '#f48722', '#f48722']}
+                  progressBackgroundColor="#fbdcb7"
                 />
               } >
                 <ImageBackground style={styles.header}  source={require('../images/headerBg.jpg')}>
@@ -165,7 +169,7 @@ class NineBox extends React.Component{
                               }
                                )
                         }} style={{width:pxToDp(120),height:pxToDp(120),borderRadius:100,overflow: "hidden"}}>
-                            {this.state.dataSource.user.headerImg?<Image  style={{width:pxToDp(120),height:pxToDp(120),}} source={{uri:this.state.dataSource.user.headerImg}}></Image>:<Image  style={{width:pxToDp(120),height:pxToDp(120),}} source={require('../images/headPonter.png')}></Image>}
+                          {this.state.dataSource.user.headerImg?<Image  style={{width:pxToDp(120),height:pxToDp(120),}} source={{uri:this.state.dataSource.user.headerImg}}></Image>:<Image  style={{width:pxToDp(120),height:pxToDp(120),}} source={require('../images/headPonter.png')}></Image>}
                         </TouchableOpacity>
                         <View style={styles.headerNameJifen}>
                             {this.state.IsLogin?<Text style={styles.headerName}>{this.state.dataSource.user.nickName}</Text>:<Text onPress={()=>navigate('Login')} style={styles.headerName}>请点击登录</Text>}
@@ -218,7 +222,7 @@ class NineBox extends React.Component{
                         {this.state.commentDt==0||this.state.commentDt==null?null:<View style={this.state.commentDt>=100?styles.goodsWrapSpanWrap1:styles.goodsWrapSpanWrap}><Text  style={styles.goodsWrapSpan}>{this.state.commentDt}</Text></View>}
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.goodsWrap}  onPress={()=>{
-                        this.goLogin("MyAllOrder",{num:4})
+                        this.goLogin("MyAllOrder",{num:5})
                     }}>
                         <Image style={styles.goodsWrapImg5} source={require('../images/goods5.png')}></Image>
                         <Text  style={styles.goodsWrapText}>申请退货</Text>
@@ -228,7 +232,7 @@ class NineBox extends React.Component{
                 <View style={styles.line}></View>
                 <View style={styles.order}>
                       <View style={styles.myOrder}>
-                          <Image style={styles.myOrderImg} source={require('../images/myOrder.png')}></Image>
+                          <Image style={styles.myOrderImg} source={require('../images/oline.png')}></Image>
                           <Text style={styles.myOrderText} onPress={()=>{
                         this.goLogin("OfflineOrder")
                     }}>线下订单</Text>
@@ -244,15 +248,13 @@ class NineBox extends React.Component{
                     this.goLogin("MyCard")
                      }>
                         <View style={styles.discountWrap}>
-                            <Text style={styles.discountWrapText}>{this.state.happyCart}</Text>
-                            <Text>团到家卡</Text>
+                            <Text>团到家卡{this.state.happyCart>0?<Text style={styles.discountWrapText}>({this.state.happyCart})</Text>:null}</Text>
                         </View>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.discountWrap} onPress={() => {
                             this.goLogin("EnterpriseAccount")
                       }}>
                         <View style={styles.discountWrap}>
-                            <Text style={styles.discountWrapText}></Text>
                             <Text>企业账户</Text>
                         </View>
                     </TouchableOpacity>
@@ -311,15 +313,18 @@ class NineBox extends React.Component{
                         }}>
                           <Text style={styles.cancel}>取消</Text>
                         </TouchableOpacity>
-                                <TouchableOpacity style={styles.btn} onPress={() => {
-                        CookieManager.clearAll().then((res) => {
-                              console.log('CookieManager.clearAll =>', res);
-                              this.setState({btn:false})
-                              this.setModalVisible(!this.state.modalVisible)
-                              global.storage.remove({
+                        <TouchableOpacity style={styles.btn} onPress={() => {
+                            CookieManager.clearAll().then((res) => {
+                                this.setState({btn:false})
+                                this.setModalVisible(!this.state.modalVisible)
+                                global.storage.remove({
                                 key: 'Cookie'
-                              });
-                              navigate('Home')
+                                });
+                                global.storage.remove({
+                                    key: 'goods'
+                                });
+                                global.addressId = 0
+                                navigate('Home')
                             });
                         }}>
                           <Text style={styles.ok}>确定</Text>
@@ -445,7 +450,8 @@ const styles = StyleSheet.create({
         borderWidth: pxToDp(2),
         borderColor: "#f50739",
         borderRadius: 100,
-        color: "#f50739",
+        
+        backgroundColor: '#ff5a00',
         textAlign: 'center',
         fontSize: pxToDp(24),
         lineHeight: pxToDp(36),
@@ -462,8 +468,8 @@ const styles = StyleSheet.create({
         height: pxToDp(36),
         borderWidth: pxToDp(2),
         borderColor: "#f50739",
+        backgroundColor: '#ff5a00',
         borderRadius: 100,
-        color: "#f50739",
         textAlign: 'center',
         fontSize: pxToDp(24),
         lineHeight: pxToDp(36),
@@ -473,7 +479,7 @@ const styles = StyleSheet.create({
     },
     goodsWrapSpan: {
         fontSize: pxToDp(24),
-        color: "#f50739",
+        color: "#fff",
     },
     line: {
         height: pxToDp(20),

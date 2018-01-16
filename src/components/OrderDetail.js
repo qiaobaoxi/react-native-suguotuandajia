@@ -23,7 +23,8 @@ class Index extends Component{
         super(props);
         // console.disableYellowBox = true;
     }
-    handleMessage(navigate,e) {
+    handleMessage(navigate, e) {
+        Alert.alert('1')
         // Alert.alert(e)
         // if(e){
         //   navigate('Home')
@@ -34,12 +35,17 @@ class Index extends Component{
         
         return(
             <WebView
-                      style={{
-                        backgroundColor: "#e5e5e5",
-                        height: 100,
-                      }}
-                      source={{uri:global.url+'/web/orderDetail.html'}}
-                      onMessage={this.handleMessage(navigate)}  
+                style={{
+                    backgroundColor: "#e5e5e5",
+                    height: 100,
+                }}
+                startInLoadingState={true}
+                userAgent='TDJAPP'
+                renderError={() => {
+                    return (<View style={styles.container}><Text>网络出错,请联系客服</Text></View>)
+                }}
+                source={{uri:global.url+'/web/orderDetail.html'}}
+                onMessage={this.handleMessage(navigate)}  
             />
         );
     }

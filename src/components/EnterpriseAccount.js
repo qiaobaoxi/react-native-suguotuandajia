@@ -15,6 +15,7 @@ import {
 const deviceWidthDp = Dimensions.get('window').width;
 import CookieManager from 'react-native-cookies';
 import Cookie from 'react-native-cookie';
+// import WebViewAndroid from 'react-native-webview-android';
 import Header from '../js/header'
 const uiWidthPx = 750;
 
@@ -52,10 +53,16 @@ class Index extends Component{
                     backgroundColor: "#e5e5e5",
                     height: 100,
                     }}
+                    startInLoadingState={true}
+                    userAgent='TDJAPP'
+                    renderError={() => {
+                        return (<View style={styles.container}><Text>网络出错,请联系客服</Text></View>)
+                    }}
                     source={{uri:global.url+'/web/my/enterpriseAccount.html?type='+num}}
                     onMessage={this.handleMessage(navigate)}  
                 />
             </View>
+            
         );
     }
 }

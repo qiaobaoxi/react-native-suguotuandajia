@@ -52,17 +52,9 @@ class StorePayment extends Component{
           timer:null
       }
       this.setIntervalFn()
-        fetch(global.url+'/api/User/GetPayCode?','get','',(responseData)=>{
-          console.log(responseData)
-          this.setState({OneDimensionalCode:responseData.data.barCodeSrc,QRcode:responseData.data.qrCodeSrc,code:responseData.data.code})   
-      }) 
-      fetch(global.url+'/api/User/GetBalance','get','',(responseData)=>{
-          this.setState({cardBalance:responseData.data.cardBalance,enterpriseAccountBalance:responseData.data.enterpriseAccountBalance})   
-      }) 
-        
+      this.loadData()
     }
     componentDidUpdate(){
-      // Alert.alert('111')
   }
   setIntervalFn() { 
     let timer=setInterval(()=>{ 
@@ -75,17 +67,23 @@ class StorePayment extends Component{
       this.setState({isRefreshing: true});
       setTimeout(() => {
         // prepend 10 items
-        fetch(global.url+'/api/User/GetPayCode?','get','',(responseData)=>{
-          console.log(responseData)
-          this.setState({OneDimensionalCode:responseData.data.barCodeSrc,QRcode:responseData.data.qrCodeSrc,code:responseData.data.code})   
-      }) 
-      fetch(global.url+'/api/User/GetBalance','get','',(responseData)=>{
-          this.setState({cardBalance:responseData.data.cardBalance,enterpriseAccountBalance:responseData.data.enterpriseAccountBalance})   
-        }) 
+        this.loadData()
          
       this.setState({isRefreshing: false});
     }, 1000);
     this.setIntervalFn() 
+  }
+    componentWillReceiveProps() { 
+      this.loadData()
+  }
+  loadData() { 
+    fetch(global.url+'/api/User/GetPayCode?','get','',(responseData)=>{
+      console.log(responseData)
+      this.setState({OneDimensionalCode:responseData.data.barCodeSrc,QRcode:responseData.data.qrCodeSrc,code:responseData.data.code})   
+    }) 
+    fetch(global.url+'/api/User/GetBalance','get','',(responseData)=>{
+      this.setState({cardBalance:responseData.data.cardBalance,enterpriseAccountBalance:responseData.data.enterpriseAccountBalance})   
+    }) 
   }
     render(){
       const { navigate } = this.props.navigation;
@@ -101,8 +99,8 @@ class StorePayment extends Component{
             tintColor="#ff0000"
             title="Loading..."
             titleColor="#00ff00"
-            colors={['#ff0000', '#00ff00', '#0000ff']}
-            progressBackgroundColor="#ffff00"
+            colors={['#f48722', '#f48722', '#f48722']}
+            progressBackgroundColor="#fbdcb7"
           />
         }>
             <View style={styles.body}>
@@ -112,7 +110,6 @@ class StorePayment extends Component{
               <View style={styles.bodyCodeImgWrap}>
                  <Image style={styles.OneDimensionalCode} source={{uri:this.state.OneDimensionalCode}} resizeMode={"contain"}></Image>
                  <Text style={styles.seeCodeNum}>{this.state.code}</Text>
-                 <Image style={styles.QRCode} source={{uri:this.state.QRcode}}></Image>
               </View>
               <View style={styles.total}>
                 <View style={styles.totalType}>
@@ -147,9 +144,6 @@ class StorePayment extends Component{
               })
             }} style={styles.allAccount}>
               <Image style={styles.allAccountImg} source={require('../images/account.png')}></Image><Text style={styles.allCardText}>查看企业账户</Text><Image style={styles.dir} source={require('../images/dir.png')}></Image>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.allAccount} onPress={()=> navigate('Store')}>
-              <Image style={styles.allAccountImg1} source={require('../images/storeAddress.png')}></Image><Text style={styles.allCardText}>查看线下门店</Text><Image style={styles.dir} source={require('../images/dir.png')}></Image>
             </TouchableOpacity>
           </ScrollView> 
          </View> 
@@ -209,11 +203,10 @@ const styles = StyleSheet.create({
      },
     OneDimensionalCode: {
       marginTop: pxToDp(48),
-      width: pxToDp(530),
-      height: pxToDp(166)
+      width: pxToDp(590),
+      height: pxToDp(160),
     },
-    seeCodeNum:{
-      marginTop: pxToDp(10),
+    seeCodeNum: {
       height: pxToDp(64),
       textAlignVertical:'center',
       fontSize: pxToDp(28),

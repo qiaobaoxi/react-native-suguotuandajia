@@ -13,10 +13,16 @@ import {
   TouchableOpacity
 } from 'react-native';
 const deviceWidthDp = Dimensions.get('window').width;
+import * as WeChat from 'react-native-wechat';
 import CookieManager from 'react-native-cookies';
 import Cookie from 'react-native-cookie';
 import Header from '../js/header'
+import webviewjs from '../js/webviewjs'
+import handleMessage from '../js/handlerMessage'
+import Fetch from '../js/fetch'
+import WxPay from '../js/wxPay'
 const uiWidthPx = 750;
+WeChat.registerApp('wx552eb71ba49e52ad')
 
 function pxToDp(uiElementPx) {
   return uiElementPx *  deviceWidthDp / uiWidthPx;
@@ -25,10 +31,17 @@ class Index extends Component{
     constructor(props) {
         super(props);
         // console.disableYellowBox = true;
-        
     }
-    handleMessage(navigate,e) {
-        //   navigate('OrderDetail')
+    handleMessage(e, navigate) {
+        if (!e.nativeEvent.data) { 
+            Alert.alert('参数出错')
+            return 
+        }
+        let params = {
+            orderNo: e.nativeEvent.data,
+            isApp: true
+        }
+        WxPay(params, WeChat, navigate, '/api/order/GeneratePayParams')
     }
     render(){
         const { navigate,goBack } = this.props.navigation;
@@ -43,20 +56,27 @@ class Index extends Component{
         let num=''
         if(params){
            num=params.num
-        //    Alert.alert(''+num)
         }
-        return(
+        let time= new Date().getTime()
+        return (
             <View style={{flex:1}}>
                 <Header goBack={goBack} text={'线上订单列表'}></Header>
                 <WebView
-                    style={{
-                    backgroundColor: "#e5e5e5",
-                    height: 100,
+                    style = {{
+                      backgroundColor: "#e5e5e5",
+                      height: 100,
                     }}
-                    source={{uri:global.url+'/web/myOrder.html?type='+num}
-                    }
-                    userAgent="TDJAPP"
-                    onMessage={this.handleMessage(navigate)}  
+                    startInLoadingState={true}
+                    javaScriptEnabled={true}
+                    injectedJavaScript={webviewjs}
+                    userAgent='TDJAPP'
+                    renderError={() => {
+                        return (<View style={styles.container}><Text>网络出错,请联系客服</Text></View>)
+                    }}
+                    source={{uri:global.url+'/web/myOrder.html?type='+num+'&time='+time}}
+                    onMessage={(e) => {
+                        this.handleMessage(e,navigate)
+                    }}  
                 />
             </View>
         );

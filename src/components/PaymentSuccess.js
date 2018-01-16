@@ -39,7 +39,7 @@ class Store extends Component{
     
     constructor(props) {
         super(props);
-        // console.disableYellowBox = true;
+        console.disableYellowBox = true;
         var ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
         
     }
@@ -57,7 +57,8 @@ class Store extends Component{
             <View style={styles.body}>
               <Image style={styles.paymentSuccessImg} source={require('../images/paymentSuccess.png')}></Image>
               <Text style={styles.paymentSuccessTitle}>支付成功</Text>
-              <Text style={styles.paymentSuccessPrice}>¥{params.payAmount.toFixed(2)}</Text>
+              {params.payAmount>0?<Text style={styles.paymentSuccessPrice}>微信支付：¥{params.payAmount.toFixed(2)}</Text>:null}
+              {params.totalCardPayment > 0 ? <Text style={styles.paymentSuccessPrice}>卡支付：¥{params.totalCardPayment.toFixed(2)}</Text> : null}
               <View style={styles.paymentSuccessBtn}>
                 <TouchableOpacity style={styles.paymentSuccessBtn1} onPress={()=>navigate("MyAllOrder",{num:1})}><Text style={styles.paymentSuccessSeeOrder}>查看订单</Text></TouchableOpacity>
                 <TouchableOpacity style={styles.paymentSuccessBtn2} onPress={()=>navigate("Home")}><Text style={styles.paymentSuccessBackHome}>继续逛逛</Text></TouchableOpacity>
